@@ -165,9 +165,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun deleteVideo(video: Video, deleteFromFileSystem: Boolean = false) {
+        viewModelScope.launch {
+            repository.deleteVideo(video, deleteFromFileSystem)
+        }
+    }
+
     fun deleteVideo(videoId: String) {
         viewModelScope.launch {
-            repository.deleteVideo(videoId)
+            repository.deleteVideoById(videoId)
         }
     }
 

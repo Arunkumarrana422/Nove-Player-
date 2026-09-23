@@ -191,7 +191,25 @@ class VideoRepository(private val context: Context) {
         videoDao.setFavorite(video.id, newFav)
     }
 
-    suspend fun deleteVideo(id: String) = withContext(Dispatchers.IO) {
+    suspend fun deleteVideo(video: Video, deleteFromFileSystem: Boolean = false) = withContext(Dispatchers.IO) {
+        if (deleteFromFileSystem && !video.isOnline) {
+            try {
+                if (video.path.isNotBlank()) {
+                    val file = java.io.File(video.path)
+                    if (file.exists()) {
+                        file.delete()
+                    }
+                }
+                if (video.uri.isNotBlank()) {
+                    val uri = Uri.parse(video.uri)
+                    context.contentResolver.delete(uri, null, null)
+                }
+            } catch (_: Exception) {}
+        }
+        videoDao.deleteVideo(video.id)
+    }
+
+    suspend fun deleteVideoById(id: String) = withContext(Dispatchers.IO) {
         videoDao.deleteVideo(id)
     }
 

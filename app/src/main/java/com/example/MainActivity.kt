@@ -1,6 +1,7 @@
 package com.example
 
 import android.Manifest
+import android.app.Activity
 import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -8,15 +9,20 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Rational
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -28,12 +34,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -47,6 +56,7 @@ import com.example.domain.model.ThemePreference
 import com.example.domain.model.Video
 import com.example.ui.components.AddToPlaylistDialog
 import com.example.ui.components.CreatePlaylistDialog
+import com.example.ui.components.DeleteVideoDialog
 import com.example.ui.components.MiniPlayerView
 import com.example.ui.components.NovaAppBar
 import com.example.ui.components.VideoInfoBottomSheet
@@ -67,6 +77,7 @@ import com.example.ui.theme.NovaAccent
 import com.example.ui.theme.NovaPlayerTheme
 import com.example.ui.theme.NovaPrimary
 import com.example.ui.viewmodel.MainViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -221,34 +232,61 @@ fun NovaPlayerApp(
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
     var videoToAddToPlaylist by remember { mutableStateOf<Video?>(null) }
     var infoVideo by remember { mutableStateOf<Video?>(null) }
+    var videoToDelete by remember { mutableStateOf<Video?>(null) }
 
-    val startDestination = if (userSettings.onboardingCompleted) Screen.Folders.route else Screen.Onboarding.route
+    // Double back to exit state
+    var lastBackPressTime by remember { mutableLongStateOf(0L) }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
-    val mainTabRoutes = remember {
-        setOf(
-            Screen.Home.route,
-            Screen.Videos.route,
-            Screen.Folders.route,
-            Screen.Playlists.route,
-            Screen.Online.route
-        )
-    }
+    val startDestination = if (userSettings.onboardingCompleted) Screen.MainTabs.route else Screen.Onboarding.route
+
+    // Main 5 tabs Pager (Default start at Folders = index 2)
+    val pagerState = rememberPagerState(initialPage = 2) { BottomNavItems.size }
+
     val isPlayerScreen = currentRoute == Screen.Player.route
-    val showBottomBar = currentRoute in mainTabRoutes
-    val showTopBar = currentRoute in mainTabRoutes
+    val isMainTabs = currentRoute == Screen.MainTabs.route || currentRoute == null
+    val showBottomBar = isMainTabs
+    val showTopBar = isMainTabs
+
+    val isAtMainRoot = isMainTabs && selectedFolder == null && selectedPlaylist == null
+
+    // Double back press to exit
+    BackHandler(enabled = isAtMainRoot) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastBackPressTime < 2000L) {
+            (context as? Activity)?.finish()
+        } else {
+            lastBackPressTime = currentTime
+            Toast.makeText(context, "Press back again to exit", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun requestDeleteVideo(videoId: String) {
+        val target = allVideos.find { it.id == videoId }
+            ?: onlineVideos.find { it.id == videoId }
+            ?: watchHistory.find { it.id == videoId }
+            ?: continueWatching.find { it.id == videoId }
+        if (target != null) {
+            videoToDelete = target
+        } else {
+            viewModel.deleteVideo(videoId)
+        }
+    }
 
     Scaffold(
         topBar = {
             if (showTopBar) {
+                val topTitle = when (pagerState.currentPage) {
+                    0 -> "Nova Player"
+                    1 -> "Video Library"
+                    2 -> "Folders"
+                    3 -> "Playlists"
+                    4 -> "Network Stream"
+                    else -> "Nova Player"
+                }
                 NovaAppBar(
-                    title = when (currentRoute) {
-                        Screen.Home.route -> "Nova Player"
-                        Screen.Videos.route -> "Video Library"
-                        Screen.Folders.route -> "Folders"
-                        Screen.Playlists.route -> "Playlists"
-                        Screen.Online.route -> "Network Stream"
-                        else -> "Nova Player"
-                    },
+                    title = topTitle,
                     isRefreshing = isScanning,
                     onSearchClick = { navController.navigate(Screen.Search.route) },
                     onRefreshClick = { viewModel.scanLibrary() },
@@ -278,14 +316,21 @@ fun NovaPlayerApp(
                         )
                     }
 
+                    val isDark = isSystemInDarkTheme() || userSettings.theme == ThemePreference.DARK
+                    val indicatorColor = if (isDark) {
+                        NovaPrimary.copy(alpha = 0.22f)
+                    } else {
+                        NovaPrimary.copy(alpha = 0.14f)
+                    }
+
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         tonalElevation = 6.dp,
                         modifier = Modifier.testTag("bottom_navigation_bar")
                     ) {
-                        BottomNavItems.forEach { item ->
-                            val selected = currentRoute == item.route
+                        BottomNavItems.forEachIndexed { index, item ->
+                            val selected = pagerState.currentPage == index
                             NavigationBarItem(
                                 selected = selected,
                                 onClick = {
@@ -294,14 +339,8 @@ fun NovaPlayerApp(
                                     } else if (item.route == Screen.Playlists.route) {
                                         viewModel.selectPlaylist(null)
                                     }
-                                    if (currentRoute != item.route) {
-                                        navController.navigate(item.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
                                     }
                                 },
                                 icon = {
@@ -311,11 +350,11 @@ fun NovaPlayerApp(
                                 },
                                 label = { Text(item.title) },
                                 colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = Color.White,
-                                    selectedTextColor = NovaAccent,
-                                    indicatorColor = NovaPrimary,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    selectedIconColor = if (isDark) NovaAccent else NovaPrimary,
+                                    selectedTextColor = if (isDark) NovaAccent else NovaPrimary,
+                                    indicatorColor = indicatorColor,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                 ),
                                 modifier = Modifier.testTag("nav_tab_${item.route}")
                             )
@@ -340,111 +379,119 @@ fun NovaPlayerApp(
                     OnboardingScreen(
                         onGetStarted = {
                             viewModel.setOnboardingCompleted(true)
-                            navController.navigate(Screen.Folders.route) {
+                            navController.navigate(Screen.MainTabs.route) {
                                 popUpTo(Screen.Onboarding.route) { inclusive = true }
                             }
                         }
                     )
                 }
 
-                composable(Screen.Home.route) {
-                    HomeScreen(
-                        continueWatching = continueWatching,
-                        recentVideos = allVideos,
-                        featuredStreams = onlineVideos,
-                        folders = folders,
-                        playlists = playlists,
-                        allVideosCount = allVideos.size,
-                        onPlayVideo = { video, playlist ->
-                            viewModel.playerManager.playVideo(video, playlist)
-                            navController.navigate(Screen.Player.route)
-                        },
-                        onOpenStreamDialog = { navController.navigate(Screen.Online.route) },
-                        onNavigateToVideos = { navController.navigate(Screen.Videos.route) },
-                        onNavigateToFolders = { navController.navigate(Screen.Folders.route) },
-                        onNavigateToPlaylists = { navController.navigate(Screen.Playlists.route) },
-                        onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
-                        onNavigateToHistory = { navController.navigate(Screen.History.route) },
-                        onToggleFavorite = { viewModel.toggleFavorite(it) },
-                        onAddToPlaylist = { videoToAddToPlaylist = it },
-                        onShowVideoInfo = { infoVideo = it },
-                        onDeleteVideo = { viewModel.deleteVideo(it) }
-                    )
-                }
+                composable(Screen.MainTabs.route) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        userScrollEnabled = (selectedFolder == null && selectedPlaylist == null)
+                    ) { page ->
+                        when (page) {
+                            0 -> HomeScreen(
+                                continueWatching = continueWatching,
+                                recentVideos = allVideos,
+                                featuredStreams = onlineVideos,
+                                folders = folders,
+                                playlists = playlists,
+                                allVideosCount = allVideos.size,
+                                onPlayVideo = { video, playlist ->
+                                    viewModel.playerManager.playVideo(video, playlist)
+                                    navController.navigate(Screen.Player.route)
+                                },
+                                onOpenStreamDialog = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(4) }
+                                },
+                                onNavigateToVideos = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                                },
+                                onNavigateToFolders = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(2) }
+                                },
+                                onNavigateToPlaylists = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(3) }
+                                },
+                                onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
+                                onNavigateToHistory = { navController.navigate(Screen.History.route) },
+                                onToggleFavorite = { viewModel.toggleFavorite(it) },
+                                onAddToPlaylist = { videoToAddToPlaylist = it },
+                                onShowVideoInfo = { infoVideo = it },
+                                onDeleteVideo = { requestDeleteVideo(it) }
+                            )
 
-                composable(Screen.Videos.route) {
-                    VideosScreen(
-                        videos = allVideos,
-                        sortOption = userSettings.sortOption,
-                        viewMode = userSettings.viewMode,
-                        isScanning = isScanning,
-                        onSortChange = { viewModel.setSortOption(it) },
-                        onViewModeChange = { viewModel.setViewMode(it) },
-                        onRefresh = { viewModel.scanLibrary() },
-                        onPlayVideo = { video, playlist ->
-                            viewModel.playerManager.playVideo(video, playlist)
-                            navController.navigate(Screen.Player.route)
-                        },
-                        onToggleFavorite = { viewModel.toggleFavorite(it) },
-                        onAddToPlaylist = { videoToAddToPlaylist = it },
-                        onShowVideoInfo = { infoVideo = it },
-                        onDeleteVideo = { viewModel.deleteVideo(it) }
-                    )
-                }
+                            1 -> VideosScreen(
+                                videos = allVideos,
+                                sortOption = userSettings.sortOption,
+                                viewMode = userSettings.viewMode,
+                                isScanning = isScanning,
+                                onSortChange = { viewModel.setSortOption(it) },
+                                onViewModeChange = { viewModel.setViewMode(it) },
+                                onRefresh = { viewModel.scanLibrary() },
+                                onPlayVideo = { video, playlist ->
+                                    viewModel.playerManager.playVideo(video, playlist)
+                                    navController.navigate(Screen.Player.route)
+                                },
+                                onToggleFavorite = { viewModel.toggleFavorite(it) },
+                                onAddToPlaylist = { videoToAddToPlaylist = it },
+                                onShowVideoInfo = { infoVideo = it },
+                                onDeleteVideo = { requestDeleteVideo(it) }
+                            )
 
-                composable(Screen.Folders.route) {
-                    FoldersScreen(
-                        folders = folders,
-                        selectedFolder = selectedFolder,
-                        onSelectFolder = { viewModel.selectFolder(it) },
-                        onPlayVideo = { video, playlist ->
-                            viewModel.playerManager.playVideo(video, playlist)
-                            navController.navigate(Screen.Player.route)
-                        },
-                        onToggleFavorite = { viewModel.toggleFavorite(it) },
-                        onAddToPlaylist = { videoToAddToPlaylist = it },
-                        onShowVideoInfo = { infoVideo = it },
-                        onDeleteVideo = { viewModel.deleteVideo(it) }
-                    )
-                }
+                            2 -> FoldersScreen(
+                                folders = folders,
+                                selectedFolder = selectedFolder,
+                                onSelectFolder = { viewModel.selectFolder(it) },
+                                onPlayVideo = { video, playlist ->
+                                    viewModel.playerManager.playVideo(video, playlist)
+                                    navController.navigate(Screen.Player.route)
+                                },
+                                onToggleFavorite = { viewModel.toggleFavorite(it) },
+                                onAddToPlaylist = { videoToAddToPlaylist = it },
+                                onShowVideoInfo = { infoVideo = it },
+                                onDeleteVideo = { requestDeleteVideo(it) }
+                            )
 
-                composable(Screen.Playlists.route) {
-                    PlaylistsScreen(
-                        playlists = playlists,
-                        selectedPlaylist = selectedPlaylist,
-                        playlistVideosFlow = { id -> viewModel.getPlaylistVideos(id) },
-                        onSelectPlaylist = { viewModel.selectPlaylist(it) },
-                        onCreatePlaylistClick = { showCreatePlaylistDialog = true },
-                        onDeletePlaylist = { viewModel.deletePlaylist(it) },
-                        onRemoveFromPlaylist = { pId, vId -> viewModel.removeVideoFromPlaylist(pId, vId) },
-                        onPlayVideo = { video, playlist ->
-                            viewModel.playerManager.playVideo(video, playlist)
-                            navController.navigate(Screen.Player.route)
-                        },
-                        onToggleFavorite = { viewModel.toggleFavorite(it) },
-                        onAddToPlaylist = { videoToAddToPlaylist = it },
-                        onShowVideoInfo = { infoVideo = it }
-                    )
-                }
+                            3 -> PlaylistsScreen(
+                                playlists = playlists,
+                                selectedPlaylist = selectedPlaylist,
+                                playlistVideosFlow = { id -> viewModel.getPlaylistVideos(id) },
+                                onSelectPlaylist = { viewModel.selectPlaylist(it) },
+                                onCreatePlaylistClick = { showCreatePlaylistDialog = true },
+                                onDeletePlaylist = { viewModel.deletePlaylist(it) },
+                                onRemoveFromPlaylist = { pId, vId -> viewModel.removeVideoFromPlaylist(pId, vId) },
+                                onPlayVideo = { video, playlist ->
+                                    viewModel.playerManager.playVideo(video, playlist)
+                                    navController.navigate(Screen.Player.route)
+                                },
+                                onToggleFavorite = { viewModel.toggleFavorite(it) },
+                                onAddToPlaylist = { videoToAddToPlaylist = it },
+                                onShowVideoInfo = { infoVideo = it }
+                            )
 
-                composable(Screen.Online.route) {
-                    OnlineStreamScreen(
-                        onlineVideos = onlineVideos,
-                        onPlayOnlineVideo = { video, playlist ->
-                            viewModel.playerManager.playVideo(video, playlist)
-                            navController.navigate(Screen.Player.route)
-                        },
-                        onAddAndPlay = { title, url ->
-                            viewModel.addOnlineVideo(title, url) { created ->
-                                viewModel.playerManager.playVideo(created)
-                                navController.navigate(Screen.Player.route)
-                            }
-                        },
-                        onToggleFavorite = { viewModel.toggleFavorite(it) },
-                        onAddToPlaylist = { videoToAddToPlaylist = it },
-                        onShowVideoInfo = { infoVideo = it },
-                        onDeleteVideo = { viewModel.deleteVideo(it) }
-                    )
+                            4 -> OnlineStreamScreen(
+                                onlineVideos = onlineVideos,
+                                onPlayOnlineVideo = { video, playlist ->
+                                    viewModel.playerManager.playVideo(video, playlist)
+                                    navController.navigate(Screen.Player.route)
+                                },
+                                onAddAndPlay = { title, url ->
+                                    viewModel.addOnlineVideo(title, url) { created ->
+                                        viewModel.playerManager.playVideo(created)
+                                        navController.navigate(Screen.Player.route)
+                                    }
+                                },
+                                onToggleFavorite = { viewModel.toggleFavorite(it) },
+                                onAddToPlaylist = { videoToAddToPlaylist = it },
+                                onShowVideoInfo = { infoVideo = it },
+                                onDeleteVideo = { requestDeleteVideo(it) }
+                            )
+                        }
+                    }
                 }
 
                 composable(Screen.Favorites.route) {
@@ -492,7 +539,7 @@ fun NovaPlayerApp(
                         onToggleFavorite = { viewModel.toggleFavorite(it) },
                         onAddToPlaylist = { videoToAddToPlaylist = it },
                         onShowVideoInfo = { infoVideo = it },
-                        onDeleteVideo = { viewModel.deleteVideo(it) }
+                        onDeleteVideo = { requestDeleteVideo(it) }
                     )
                 }
 
@@ -551,6 +598,22 @@ fun NovaPlayerApp(
             onCreateNewPlaylist = {
                 videoToAddToPlaylist = null
                 showCreatePlaylistDialog = true
+            }
+        )
+    }
+
+    videoToDelete?.let { video ->
+        DeleteVideoDialog(
+            video = video,
+            onDismiss = { videoToDelete = null },
+            onConfirm = { deleteFromFileSystem ->
+                viewModel.deleteVideo(video, deleteFromFileSystem)
+                videoToDelete = null
+                Toast.makeText(
+                    context,
+                    if (deleteFromFileSystem) "Video permanently deleted from storage" else "Video removed from library",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         )
     }
