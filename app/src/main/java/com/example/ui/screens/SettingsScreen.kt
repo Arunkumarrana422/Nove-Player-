@@ -112,7 +112,7 @@ fun SettingsScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 90.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // APPEARANCE
@@ -122,9 +122,9 @@ fun SettingsScreen(
                         icon = Icons.Default.Palette,
                         title = "Theme Mode",
                         subtitle = when (settings.theme) {
-                            ThemePreference.DARK -> "Dark Theme (Default)"
+                            ThemePreference.SYSTEM -> "Follow System (Default)"
+                            ThemePreference.DARK -> "Dark Theme"
                             ThemePreference.LIGHT -> "Light Theme"
-                            ThemePreference.SYSTEM -> "Follow System"
                         },
                         onClick = { themeMenuExpanded = true }
                     ) {
@@ -134,7 +134,15 @@ fun SettingsScreen(
                         ) {
                             ThemePreference.values().forEach { pref ->
                                 DropdownMenuItem(
-                                    text = { Text(pref.name) },
+                                    text = {
+                                        Text(
+                                            when (pref) {
+                                                ThemePreference.SYSTEM -> "System Default"
+                                                ThemePreference.DARK -> "Dark Theme"
+                                                ThemePreference.LIGHT -> "Light Theme"
+                                            }
+                                        )
+                                    },
                                     onClick = {
                                         themeMenuExpanded = false
                                         onThemeChange(pref)

@@ -226,7 +226,9 @@ fun NovaPlayerApp(
 
     val isPlayerScreen = currentRoute == Screen.Player.route
     val isOnboardingScreen = currentRoute == Screen.Onboarding.route
-    val showBottomBar = !isPlayerScreen && !isOnboardingScreen
+    val isSearchScreen = currentRoute == Screen.Search.route
+    val isSettingsScreen = currentRoute == Screen.Settings.route
+    val showBottomBar = !isPlayerScreen && !isOnboardingScreen && !isSearchScreen && !isSettingsScreen
 
     Scaffold(
         topBar = {

@@ -61,7 +61,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun NovaPlayerTheme(
-    themePreference: ThemePreference = ThemePreference.DARK,
+    themePreference: ThemePreference = ThemePreference.SYSTEM,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
