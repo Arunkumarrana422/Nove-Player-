@@ -10,9 +10,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,9 +35,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -265,120 +266,169 @@ fun PlayerScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(isLocked) {
-                    if (isLocked) return@pointerInput
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        if (zoom != 1f || zoomScale > 1.01f) {
-                            val newScale = (zoomScale * zoom).coerceIn(1f, 4.5f)
-                            zoomScale = newScale
-                            if (newScale <= 1.02f) {
-                                zoomScale = 1f
-                                panOffsetX = 0f
-                                panOffsetY = 0f
-                            } else {
-                                val maxPanX = (size.width * (zoomScale - 1f)) / 2f
-                                val maxPanY = (size.height * (zoomScale - 1f)) / 2f
-                                panOffsetX = (panOffsetX + pan.x * zoomScale).coerceIn(-maxPanX, maxPanX)
-                                panOffsetY = (panOffsetY + pan.y * zoomScale).coerceIn(-maxPanY, maxPanY)
-                            }
-                            hudState = GestureHudState.Zoom(zoomScale)
-                        }
-                    }
-                }
                 .pointerInput(isLocked, settings.gesturesEnabled) {
                     if (isLocked) {
-                        detectTapGestures(onTap = { areControlsVisible = !areControlsVisible })
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            val downTime = System.currentTimeMillis()
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val active = event.changes.filter { it.pressed }
+                                if (active.isEmpty()) {
+                                    if (System.currentTimeMillis() - downTime < 300) {
+                                        areControlsVisible = !areControlsVisible
+                                    }
+                                    break
+                                }
+                            }
+                        }
                         return@pointerInput
                     }
 
-                    detectTapGestures(
-                        onTap = {
-                            areControlsVisible = !areControlsVisible
-                        },
-                        onDoubleTap = { offset ->
-                            if (zoomScale > 1.05f) {
-                                zoomScale = 1f
-                                panOffsetX = 0f
-                                panOffsetY = 0f
-                                hudState = GestureHudState.Zoom(1f)
-                            } else {
-                                val isRightSide = offset.x > size.width / 2
-                                val seekDeltaMs = if (isRightSide) {
-                                    settings.doubleTapSeekSeconds * 1000L
+                    var lastTapTime = 0L
+                    var lastTapOffset = Offset.Zero
+
+                    awaitEachGesture {
+                        val firstDown = awaitFirstDown(requireUnconsumed = false)
+                        val startTime = System.currentTimeMillis()
+                        val startPos = firstDown.position
+                        var isMultiTouch = false
+                        var isDragging = false
+                        var isDragHorizontal = false
+                        var totalDragX = 0f
+                        var totalDragY = 0f
+                        val isLeft = startPos.x < size.width / 2
+
+                        var previousCentroid = Offset.Zero
+                        var previousDistance = 0f
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val activePointers = event.changes.filter { it.pressed }
+
+                            if (activePointers.isEmpty()) {
+                                // All fingers lifted
+                                if (isMultiTouch) {
+                                    if (zoomScale <= 1.05f) {
+                                        zoomScale = 1f
+                                        panOffsetX = 0f
+                                        panOffsetY = 0f
+                                    }
+                                } else if (isDragging) {
+                                    if (isSeekingGesture) {
+                                        playerManager.seekBy(seekDragDeltaMs)
+                                        isSeekingGesture = false
+                                        hudState = GestureHudState.None
+                                    }
+                                    if (playbackSpeed > 1.5f && hudState is GestureHudState.SpeedBoost) {
+                                        playerManager.setSpeed(settings.defaultSpeed)
+                                        hudState = GestureHudState.None
+                                    }
                                 } else {
-                                    -settings.doubleTapSeekSeconds * 1000L
+                                    // Check if it was a Tap or Double Tap
+                                    val duration = System.currentTimeMillis() - startTime
+                                    val moveDistSq = totalDragX * totalDragX + totalDragY * totalDragY
+                                    if (duration < 350 && moveDistSq < 600f) {
+                                        val now = System.currentTimeMillis()
+                                        val timeSinceLastTap = now - lastTapTime
+                                        val distFromLastTap = (startPos - lastTapOffset).getDistance()
+
+                                        if (timeSinceLastTap < 350 && distFromLastTap < 120f) {
+                                            // Double Tap
+                                            lastTapTime = 0L
+                                            if (zoomScale > 1.05f) {
+                                                zoomScale = 1f
+                                                panOffsetX = 0f
+                                                panOffsetY = 0f
+                                                hudState = GestureHudState.Zoom(1f)
+                                            } else {
+                                                val isRightSide = startPos.x > size.width / 2
+                                                val seekDeltaMs = if (isRightSide) {
+                                                    settings.doubleTapSeekSeconds * 1000L
+                                                } else {
+                                                    -settings.doubleTapSeekSeconds * 1000L
+                                                }
+                                                playerManager.seekBy(seekDeltaMs)
+                                                hudState = GestureHudState.DoubleTapSeek(isRightSide, settings.doubleTapSeekSeconds)
+                                            }
+                                        } else {
+                                            // Single Tap
+                                            lastTapTime = now
+                                            lastTapOffset = startPos
+                                            areControlsVisible = !areControlsVisible
+                                        }
+                                    }
                                 }
-                                playerManager.seekBy(seekDeltaMs)
-                                hudState = GestureHudState.DoubleTapSeek(isRightSide, settings.doubleTapSeekSeconds)
-                            }
-                        },
-                        onLongPress = {
-                            // 2X Speed Boost while held
-                            playerManager.setSpeed(2.0f)
-                            hudState = GestureHudState.SpeedBoost(2.0f)
-                        }
-                    )
-                }
-                .pointerInput(isLocked, settings.gesturesEnabled) {
-                    if (isLocked || !settings.gesturesEnabled) return@pointerInput
-
-                    var totalDragX = 0f
-                    var totalDragY = 0f
-                    var isLeft = false
-                    var isDragHorizontal = false
-
-                    detectDragGestures(
-                        onDragStart = { offset ->
-                            totalDragX = 0f
-                            totalDragY = 0f
-                            isLeft = offset.x < size.width / 2
-                            isDragHorizontal = false
-                            isSeekingGesture = false
-                            seekDragDeltaMs = 0L
-                        },
-                        onDragEnd = {
-                            if (isSeekingGesture) {
-                                playerManager.seekBy(seekDragDeltaMs)
-                                isSeekingGesture = false
-                                hudState = GestureHudState.None
-                            }
-                            if (playbackSpeed > 1.5f && hudState is GestureHudState.SpeedBoost) {
-                                playerManager.setSpeed(settings.defaultSpeed)
-                                hudState = GestureHudState.None
-                            }
-                        },
-                        onDragCancel = {
-                            isSeekingGesture = false
-                            hudState = GestureHudState.None
-                        },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            totalDragX += dragAmount.x
-                            totalDragY += dragAmount.y
-
-                            if (!isDragHorizontal && kotlin.math.abs(totalDragX) > kotlin.math.abs(totalDragY) && kotlin.math.abs(totalDragX) > 20) {
-                                isDragHorizontal = true
+                                break
                             }
 
-                            if (isDragHorizontal && settings.swipeSeekEnabled) {
-                                isSeekingGesture = true
-                                val seekRatio = totalDragX / size.width
-                                val maxSeekSpan = (durationMs * 0.15f).coerceAtLeast(30000f)
-                                seekDragDeltaMs = (seekRatio * maxSeekSpan).toLong()
-                                val target = (currentPosMs + seekDragDeltaMs).coerceIn(0L, durationMs.coerceAtLeast(1L))
-                                hudState = GestureHudState.Seek(target, seekDragDeltaMs, durationMs)
-                            } else {
-                                val deltaFraction = -dragAmount.y / (size.height * 0.75f)
-                                if (isLeft && settings.swipeBrightnessEnabled) {
-                                    playerManager.adjustBrightnessBy(deltaFraction, activity)
-                                    hudState = GestureHudState.Brightness(playerManager.brightnessFraction.value)
-                                } else if (!isLeft && settings.swipeVolumeEnabled) {
-                                    playerManager.adjustVolumeBy(deltaFraction)
-                                    hudState = GestureHudState.Volume(playerManager.volumeFraction.value)
+                            if (activePointers.size >= 2) {
+                                // 2-FINGER PINCH TO ZOOM & PAN
+                                isMultiTouch = true
+                                val p1 = activePointers[0].position
+                                val p2 = activePointers[1].position
+                                val centroid = (p1 + p2) / 2f
+                                val distance = (p1 - p2).getDistance()
+
+                                if (previousDistance > 0f) {
+                                    val scaleFactor = distance / previousDistance
+                                    val newScale = (zoomScale * scaleFactor).coerceIn(1.0f, 4.5f)
+                                    zoomScale = newScale
+
+                                    if (newScale > 1.02f) {
+                                        val maxPanX = (size.width * (zoomScale - 1f)) / 2f
+                                        val maxPanY = (size.height * (zoomScale - 1f)) / 2f
+                                        val panDelta = centroid - previousCentroid
+                                        panOffsetX = (panOffsetX + panDelta.x).coerceIn(-maxPanX, maxPanX)
+                                        panOffsetY = (panOffsetY + panDelta.y).coerceIn(-maxPanY, maxPanY)
+                                    } else {
+                                        zoomScale = 1f
+                                        panOffsetX = 0f
+                                        panOffsetY = 0f
+                                    }
+                                    hudState = GestureHudState.Zoom(zoomScale)
+                                }
+
+                                previousCentroid = centroid
+                                previousDistance = distance
+                                event.changes.forEach { it.consume() }
+
+                            } else if (activePointers.size == 1 && !isMultiTouch && settings.gesturesEnabled) {
+                                // 1-FINGER SWIPE / DRAG
+                                val change = activePointers[0]
+                                val dragAmount = change.positionChange()
+                                totalDragX += dragAmount.x
+                                totalDragY += dragAmount.y
+
+                                val totalMoveSq = totalDragX * totalDragX + totalDragY * totalDragY
+                                if (totalMoveSq > 400f && !isDragging) {
+                                    isDragging = true
+                                    isDragHorizontal = kotlin.math.abs(totalDragX) > kotlin.math.abs(totalDragY)
+                                }
+
+                                if (isDragging) {
+                                    change.consume()
+                                    if (isDragHorizontal && settings.swipeSeekEnabled) {
+                                        isSeekingGesture = true
+                                        val seekRatio = totalDragX / size.width
+                                        val maxSeekSpan = (durationMs * 0.15f).coerceAtLeast(30000f)
+                                        seekDragDeltaMs = (seekRatio * maxSeekSpan).toLong()
+                                        val target = (currentPosMs + seekDragDeltaMs).coerceIn(0L, durationMs.coerceAtLeast(1L))
+                                        hudState = GestureHudState.Seek(target, seekDragDeltaMs, durationMs)
+                                    } else {
+                                        val deltaFraction = -dragAmount.y / (size.height * 0.75f)
+                                        if (isLeft && settings.swipeBrightnessEnabled) {
+                                            playerManager.adjustBrightnessBy(deltaFraction, activity)
+                                            hudState = GestureHudState.Brightness(playerManager.brightnessFraction.value)
+                                        } else if (!isLeft && settings.swipeVolumeEnabled) {
+                                            playerManager.adjustVolumeBy(deltaFraction)
+                                            hudState = GestureHudState.Volume(playerManager.volumeFraction.value)
+                                        }
+                                    }
                                 }
                             }
                         }
-                    )
+                    }
                 }
         )
 

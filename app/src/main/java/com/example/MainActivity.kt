@@ -224,15 +224,22 @@ fun NovaPlayerApp(
 
     val startDestination = if (userSettings.onboardingCompleted) Screen.Folders.route else Screen.Onboarding.route
 
+    val mainTabRoutes = remember {
+        setOf(
+            Screen.Home.route,
+            Screen.Videos.route,
+            Screen.Folders.route,
+            Screen.Playlists.route,
+            Screen.Online.route
+        )
+    }
     val isPlayerScreen = currentRoute == Screen.Player.route
-    val isOnboardingScreen = currentRoute == Screen.Onboarding.route
-    val isSearchScreen = currentRoute == Screen.Search.route
-    val isSettingsScreen = currentRoute == Screen.Settings.route
-    val showBottomBar = !isPlayerScreen && !isOnboardingScreen && !isSearchScreen && !isSettingsScreen
+    val showBottomBar = currentRoute in mainTabRoutes
+    val showTopBar = currentRoute in mainTabRoutes
 
     Scaffold(
         topBar = {
-            if (!isPlayerScreen && !isOnboardingScreen && currentRoute != Screen.Search.route && currentRoute != Screen.Settings.route) {
+            if (showTopBar) {
                 NovaAppBar(
                     title = when (currentRoute) {
                         Screen.Home.route -> "Nova Player"
@@ -240,8 +247,6 @@ fun NovaPlayerApp(
                         Screen.Folders.route -> "Folders"
                         Screen.Playlists.route -> "Playlists"
                         Screen.Online.route -> "Network Stream"
-                        Screen.Favorites.route -> "Favorites"
-                        Screen.History.route -> "Watch History"
                         else -> "Nova Player"
                     },
                     isRefreshing = isScanning,
