@@ -21,21 +21,28 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-          cache: 'gradle'
 
-      - name: Grant execute permission for gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Environment and Keystore
         run: |
-          if [ -f "./gradlew" ]; then
-            chmod +x gradlew
+          # Ensure .env exists for Secrets gradle plugin
+          if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+            cp .env.example .env
+          elif [ ! -f ".env" ]; then
+            touch .env
           fi
 
-      - name: Build with Gradle
-        run: |
-          if [ -f "./gradlew" ]; then
-            ./gradlew assembleDebug --stacktrace
-          else
-            gradle assembleDebug --stacktrace
+          # Ensure debug.keystore exists for signingConfig
+          if [ -f "debug.keystore.base64" ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          elif [ ! -f "debug.keystore" ]; then
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
+
+      - name: Build Debug APK
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
