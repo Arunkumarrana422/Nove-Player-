@@ -181,17 +181,29 @@ class NovaPlayerManager(private val context: Context) {
         _isMiniPlayerActive.value = false
     }
 
+    fun flushProgress() {
+        _currentVideo.value?.let { video ->
+            val pos = exoPlayer.currentPosition.coerceAtLeast(0L)
+            val dur = exoPlayer.duration.coerceAtLeast(0L)
+            if (pos > 0L) {
+                onProgressUpdate?.invoke(video, pos, dur)
+            }
+        }
+    }
+
     fun play() {
         exoPlayer.play()
         _isPlaying.value = true
     }
 
     fun pause() {
+        flushProgress()
         exoPlayer.pause()
         _isPlaying.value = false
     }
 
     fun stopAndDismiss() {
+        flushProgress()
         try {
             exoPlayer.stop()
             exoPlayer.clearMediaItems()

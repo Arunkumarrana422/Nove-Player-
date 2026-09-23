@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -101,7 +103,18 @@ fun PlayerScreen(
     var seekDragDeltaMs by remember { mutableLongStateOf(0L) }
     var isSeekingGesture by remember { mutableStateOf(false) }
 
+    // 2-finger Pinch-to-Zoom & Pan state
+    var zoomScale by remember { mutableFloatStateOf(1f) }
+    var panOffsetX by remember { mutableFloatStateOf(0f) }
+    var panOffsetY by remember { mutableFloatStateOf(0f) }
+
     val video = currentVideo
+
+    LaunchedEffect(video?.id) {
+        zoomScale = 1f
+        panOffsetX = 0f
+        panOffsetY = 0f
+    }
 
     // Continue from where you stopped banner state
     var showResumeBanner by remember(video?.id) {
@@ -169,6 +182,7 @@ fun PlayerScreen(
                 // Restore phone's automatic / default system brightness
                 playerManager.restoreSystemBrightness(activity)
             }
+            playerManager.flushProgress()
         }
     }
 
@@ -199,33 +213,44 @@ fun PlayerScreen(
         val screenWidth = maxWidth
         val screenHeight = maxHeight
 
-        // Media3 PlayerView inside AndroidView
-        AndroidView(
-            factory = { ctx ->
-                PlayerView(ctx).apply {
-                    player = playerManager.exoPlayer
-                    useController = false
-                    layoutParams = FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+        // Media3 PlayerView inside Scalable Box for 2-finger zoom and pan
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = zoomScale
+                    scaleY = zoomScale
+                    translationX = panOffsetX
+                    translationY = panOffsetY
                 }
-            },
-            update = { playerView ->
-                playerView.player = playerManager.exoPlayer
-                playerView.resizeMode = when (aspectRatioMode) {
-                    AspectRatioMode.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
-                    AspectRatioMode.FILL_CROP -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                    AspectRatioMode.STRETCH -> AspectRatioFrameLayout.RESIZE_MODE_FILL
-                    AspectRatioMode.ORIGINAL -> AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
-                    AspectRatioMode.RATIO_16_9,
-                    AspectRatioMode.RATIO_4_3,
-                    AspectRatioMode.RATIO_21_9 -> AspectRatioFrameLayout.RESIZE_MODE_FIT
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+        ) {
+            AndroidView(
+                factory = { ctx ->
+                    PlayerView(ctx).apply {
+                        player = playerManager.exoPlayer
+                        useController = false
+                        layoutParams = FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+                    }
+                },
+                update = { playerView ->
+                    playerView.player = playerManager.exoPlayer
+                    playerView.resizeMode = when (aspectRatioMode) {
+                        AspectRatioMode.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        AspectRatioMode.FILL_CROP -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                        AspectRatioMode.STRETCH -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+                        AspectRatioMode.ORIGINAL -> AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
+                        AspectRatioMode.RATIO_16_9,
+                        AspectRatioMode.RATIO_4_3,
+                        AspectRatioMode.RATIO_21_9 -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // Subtitle Overlay
         SubtitleOverlay(
@@ -240,6 +265,26 @@ fun PlayerScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .pointerInput(isLocked) {
+                    if (isLocked) return@pointerInput
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        if (zoom != 1f || zoomScale > 1.01f) {
+                            val newScale = (zoomScale * zoom).coerceIn(1f, 4.5f)
+                            zoomScale = newScale
+                            if (newScale <= 1.02f) {
+                                zoomScale = 1f
+                                panOffsetX = 0f
+                                panOffsetY = 0f
+                            } else {
+                                val maxPanX = (size.width * (zoomScale - 1f)) / 2f
+                                val maxPanY = (size.height * (zoomScale - 1f)) / 2f
+                                panOffsetX = (panOffsetX + pan.x * zoomScale).coerceIn(-maxPanX, maxPanX)
+                                panOffsetY = (panOffsetY + pan.y * zoomScale).coerceIn(-maxPanY, maxPanY)
+                            }
+                            hudState = GestureHudState.Zoom(zoomScale)
+                        }
+                    }
+                }
                 .pointerInput(isLocked, settings.gesturesEnabled) {
                     if (isLocked) {
                         detectTapGestures(onTap = { areControlsVisible = !areControlsVisible })
@@ -251,14 +296,21 @@ fun PlayerScreen(
                             areControlsVisible = !areControlsVisible
                         },
                         onDoubleTap = { offset ->
-                            val isRightSide = offset.x > size.width / 2
-                            val seekDeltaMs = if (isRightSide) {
-                                settings.doubleTapSeekSeconds * 1000L
+                            if (zoomScale > 1.05f) {
+                                zoomScale = 1f
+                                panOffsetX = 0f
+                                panOffsetY = 0f
+                                hudState = GestureHudState.Zoom(1f)
                             } else {
-                                -settings.doubleTapSeekSeconds * 1000L
+                                val isRightSide = offset.x > size.width / 2
+                                val seekDeltaMs = if (isRightSide) {
+                                    settings.doubleTapSeekSeconds * 1000L
+                                } else {
+                                    -settings.doubleTapSeekSeconds * 1000L
+                                }
+                                playerManager.seekBy(seekDeltaMs)
+                                hudState = GestureHudState.DoubleTapSeek(isRightSide, settings.doubleTapSeekSeconds)
                             }
-                            playerManager.seekBy(seekDeltaMs)
-                            hudState = GestureHudState.DoubleTapSeek(isRightSide, settings.doubleTapSeekSeconds)
                         },
                         onLongPress = {
                             // 2X Speed Boost while held

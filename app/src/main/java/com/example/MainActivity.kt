@@ -242,14 +242,9 @@ fun NovaPlayerApp(
                         Screen.History.route -> "Watch History"
                         else -> "Nova Player"
                     },
-                    themePreference = userSettings.theme,
                     isRefreshing = isScanning,
                     onSearchClick = { navController.navigate(Screen.Search.route) },
                     onRefreshClick = { viewModel.scanLibrary() },
-                    onThemeToggle = {
-                        val nextTheme = if (userSettings.theme == ThemePreference.DARK) ThemePreference.LIGHT else ThemePreference.DARK
-                        viewModel.setTheme(nextTheme)
-                    },
                     onSettingsClick = { navController.navigate(Screen.Settings.route) }
                 )
             }

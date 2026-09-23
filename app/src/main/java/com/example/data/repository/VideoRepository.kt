@@ -123,7 +123,20 @@ class VideoRepository(private val context: Context) {
             }
 
             if (videos.isNotEmpty()) {
-                val entities = videos.map { it.toEntity() }
+                val existingDbVideos = videoDao.getAllVideosSync().associateBy { it.id }
+                val entities = videos.map { scanned ->
+                    val existing = existingDbVideos[scanned.id]
+                    if (existing != null) {
+                        scanned.toEntity().copy(
+                            isFavorite = existing.isFavorite,
+                            lastPositionMs = existing.lastPositionMs,
+                            lastPlayedTimestamp = existing.lastPlayedTimestamp,
+                            isCompleted = existing.isCompleted
+                        )
+                    } else {
+                        scanned.toEntity()
+                    }
+                }
                 videoDao.insertVideos(entities)
             }
             // Remove local videos that no longer exist on device storage

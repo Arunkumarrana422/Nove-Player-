@@ -19,11 +19,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.BrightnessMedium
+import androidx.compose.material.icons.filled.CropFree
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.VolumeMute
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -47,6 +50,7 @@ sealed class GestureHudState {
     data class Seek(val targetPosMs: Long, val deltaMs: Long, val totalDurationMs: Long) : GestureHudState()
     data class DoubleTapSeek(val isForward: Boolean, val deltaSeconds: Int) : GestureHudState()
     data class SpeedBoost(val speed: Float) : GestureHudState()
+    data class Zoom(val scale: Float) : GestureHudState()
 }
 
 @Composable
@@ -193,6 +197,26 @@ fun GestureOverlayIndicator(
                             color = Color.White,
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 16.sp
+                        )
+                    }
+                }
+                is GestureHudState.Zoom -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ZoomIn,
+                            contentDescription = null,
+                            tint = NovaAccent,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (hudState.scale <= 1.02f) "FIT TO SCREEN" else "ZOOM: ${(hudState.scale * 100).toInt()}%",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
                         )
                     }
                 }

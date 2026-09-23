@@ -50,11 +50,9 @@ import com.example.ui.theme.NovaSecondary
 @Composable
 fun NovaAppBar(
     title: String = "Nova Player",
-    themePreference: ThemePreference = ThemePreference.DARK,
     isRefreshing: Boolean = false,
     onSearchClick: () -> Unit = {},
     onRefreshClick: () -> Unit = {},
-    onThemeToggle: () -> Unit = {},
     onSettingsClick: () -> Unit = {}
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "refresh_spin")
@@ -124,16 +122,6 @@ fun NovaAppBar(
                         contentDescription = "Refresh Library",
                         tint = if (isRefreshing) NovaAccent else MaterialTheme.colorScheme.onBackground,
                         modifier = if (isRefreshing) Modifier.rotate(spinRotation) else Modifier
-                    )
-                }
-                IconButton(
-                    onClick = onThemeToggle,
-                    modifier = Modifier.testTag("appbar_theme_toggle")
-                ) {
-                    Icon(
-                        imageVector = if (themePreference == ThemePreference.DARK) Icons.Default.LightMode else Icons.Default.DarkMode,
-                        contentDescription = "Toggle Theme",
-                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 IconButton(
