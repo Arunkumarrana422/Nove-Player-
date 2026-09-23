@@ -1,0 +1,6 @@
+{
+  "name": "Nova Player",
+  "description": "Complete MX Player–style video player with gesture controls, online streaming, subtitles, playlists, and hardware acceleration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
