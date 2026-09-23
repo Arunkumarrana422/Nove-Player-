@@ -249,6 +249,22 @@ class NovaPlayerManager(private val context: Context) {
         }
     }
 
+    fun restoreSystemBrightness(activity: Activity?) {
+        activity?.let {
+            val lp = it.window.attributes
+            lp.screenBrightness = android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            it.window.attributes = lp
+        }
+    }
+
+    fun applyPlayerBrightness(activity: Activity?) {
+        activity?.let {
+            val lp = it.window.attributes
+            lp.screenBrightness = _brightnessFraction.value.coerceIn(0.01f, 1.0f)
+            it.window.attributes = lp
+        }
+    }
+
     fun adjustBrightnessBy(deltaFraction: Float, activity: Activity? = null) {
         setBrightness(_brightnessFraction.value + deltaFraction, activity)
     }

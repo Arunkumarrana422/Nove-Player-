@@ -142,8 +142,8 @@ fun FoldersScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .testTag("folders_screen"),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 90.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 90.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(folders, key = { it.name }) { folder ->
                     FolderCard(

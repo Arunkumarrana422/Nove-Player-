@@ -339,47 +339,16 @@ fun PlayerControlsOverlay(
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
-                // Seekbar Row with Timestamps
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = Video.formatDuration(effectivePos),
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Slider(
-                        value = if (durationMs > 0) effectivePos.toFloat() else 0f,
-                        onValueChange = {
-                            isSeeking = true
-                            seekPosition = it
-                        },
-                        onValueChangeFinished = {
-                            onSeekTo(seekPosition.toLong())
-                            isSeeking = false
-                        },
-                        valueRange = 0f..durationMs.coerceAtLeast(1L).toFloat(),
-                        colors = SliderDefaults.colors(
-                            thumbColor = NovaAccent,
-                            activeTrackColor = NovaAccent,
-                            inactiveTrackColor = Color(0x40FFFFFF)
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 8.dp)
-                            .testTag("player_seekbar")
-                    )
-
-                    Text(
-                        text = Video.formatDuration(durationMs),
-                        color = Color(0xCCFFFFFF),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                // Seekbar Row with Timestamps (Custom design matching Photo 3)
+                NovaPlayerSeekBar(
+                    currentPositionMs = effectivePos,
+                    durationMs = durationMs,
+                    bufferedPositionMs = bufferedPositionMs,
+                    onSeekTo = { pos ->
+                        onSeekTo(pos)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 // Bottom actions row
                 Row(

@@ -222,7 +222,7 @@ fun NovaPlayerApp(
     var videoToAddToPlaylist by remember { mutableStateOf<Video?>(null) }
     var infoVideo by remember { mutableStateOf<Video?>(null) }
 
-    val startDestination = if (userSettings.onboardingCompleted) Screen.Home.route else Screen.Onboarding.route
+    val startDestination = if (userSettings.onboardingCompleted) Screen.Folders.route else Screen.Onboarding.route
 
     val isPlayerScreen = currentRoute == Screen.Player.route
     val isOnboardingScreen = currentRoute == Screen.Onboarding.route
@@ -294,11 +294,7 @@ fun NovaPlayerApp(
                                     }
                                     if (currentRoute != item.route) {
                                         navController.navigate(item.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = false
-                                            }
                                             launchSingleTop = true
-                                            restoreState = false
                                         }
                                     }
                                 },
@@ -338,7 +334,7 @@ fun NovaPlayerApp(
                     OnboardingScreen(
                         onGetStarted = {
                             viewModel.setOnboardingCompleted(true)
-                            navController.navigate(Screen.Home.route) {
+                            navController.navigate(Screen.Folders.route) {
                                 popUpTo(Screen.Onboarding.route) { inclusive = true }
                             }
                         }

@@ -125,22 +125,6 @@ fun VideoCard(
                     }
                 }
 
-                // Format chip top-left
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(4.dp)
-                        .background(NovaPrimary.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = video.containerFormat,
-                        color = Color.White,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
                 // Duration badge bottom-right
                 if (video.durationMs > 0) {
                     Box(

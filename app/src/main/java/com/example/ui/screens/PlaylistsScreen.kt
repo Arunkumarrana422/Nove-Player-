@@ -28,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -66,126 +65,111 @@ fun PlaylistsScreen(
     if (selectedPlaylist != null && playlistVideosFlow != null) {
         val playlistVideos by playlistVideosFlow(selectedPlaylist.id).collectAsState(initial = emptyList())
 
-        Scaffold(
-            modifier = Modifier.testTag("playlist_detail_screen"),
-            containerColor = MaterialTheme.colorScheme.background
-        ) { padding ->
-            Column(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("playlist_detail_screen")
+        ) {
+            // Header
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Header
+                IconButton(onClick = { onSelectPlaylist(null) }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = selectedPlaylist.name,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "${playlistVideos.size} videos",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = NovaAccent
+                    )
+                }
+                IconButton(onClick = {
+                    onDeletePlaylist(selectedPlaylist.id)
+                    onSelectPlaylist(null)
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Playlist",
+                        tint = Color(0xFFEF4444)
+                    )
+                }
+            }
+
+            // Play / Shuffle Row
+            if (playlistVideos.isNotEmpty()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    IconButton(onClick = { onSelectPlaylist(null) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                    Button(
+                        onClick = { onPlayVideo(playlistVideos.first(), playlistVideos) },
+                        colors = ButtonDefaults.buttonColors(containerColor = NovaPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Play All")
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = selectedPlaylist.name,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "${playlistVideos.size} videos",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = NovaAccent
-                        )
-                    }
-                    IconButton(onClick = {
-                        onDeletePlaylist(selectedPlaylist.id)
-                        onSelectPlaylist(null)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Playlist",
-                            tint = Color(0xFFEF4444)
-                        )
+
+                    OutlinedButton(
+                        onClick = { onPlayVideo(playlistVideos.shuffled().first(), playlistVideos.shuffled()) },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Shuffle")
                     }
                 }
+            }
 
-                // Play / Shuffle Row
-                if (playlistVideos.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = { onPlayVideo(playlistVideos.first(), playlistVideos) },
-                            colors = ButtonDefaults.buttonColors(containerColor = NovaPrimary),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Play All")
-                        }
-
-                        OutlinedButton(
-                            onClick = { onPlayVideo(playlistVideos.shuffled().first(), playlistVideos.shuffled()) },
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Shuffle")
-                        }
-                    }
-                }
-
-                if (playlistVideos.isEmpty()) {
-                    EmptyStateView(
-                        icon = Icons.Default.PlaylistPlay,
-                        title = "Playlist is Empty",
-                        description = "Add videos to '${selectedPlaylist.name}' from your video library or folders."
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 90.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(playlistVideos, key = { it.id }) { video ->
-                            VideoCard(
-                                video = video,
-                                onClick = { onPlayVideo(video, playlistVideos) },
-                                onToggleFavorite = { onToggleFavorite(video) },
-                                onAddToPlaylist = { onAddToPlaylist(video) },
-                                onShowInfo = { onShowVideoInfo(video) },
-                                onDelete = { onRemoveFromPlaylist(selectedPlaylist.id, video.id) }
-                            )
-                        }
+            if (playlistVideos.isEmpty()) {
+                EmptyStateView(
+                    icon = Icons.Default.PlaylistPlay,
+                    title = "Playlist is Empty",
+                    description = "Add videos to '${selectedPlaylist.name}' from your video library or folders."
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 90.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(playlistVideos, key = { it.id }) { video ->
+                        VideoCard(
+                            video = video,
+                            onClick = { onPlayVideo(video, playlistVideos) },
+                            onToggleFavorite = { onToggleFavorite(video) },
+                            onAddToPlaylist = { onAddToPlaylist(video) },
+                            onShowInfo = { onShowVideoInfo(video) },
+                            onDelete = { onRemoveFromPlaylist(selectedPlaylist.id, video.id) }
+                        )
                     }
                 }
             }
         }
     } else {
-        Scaffold(
-            modifier = Modifier.testTag("playlists_screen"),
-            containerColor = MaterialTheme.colorScheme.background,
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = onCreatePlaylistClick,
-                    containerColor = NovaPrimary,
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.padding(bottom = 70.dp).testTag("create_playlist_fab")
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Create Playlist")
-                }
-            }
-        ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("playlists_screen")
+        ) {
             if (playlists.isEmpty()) {
                 EmptyStateView(
                     icon = Icons.Default.PlaylistPlay,
@@ -196,11 +180,9 @@ fun PlaylistsScreen(
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 90.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 90.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(playlists, key = { it.id }) { playlist ->
                         PlaylistCard(
@@ -210,6 +192,19 @@ fun PlaylistsScreen(
                         )
                     }
                 }
+            }
+
+            FloatingActionButton(
+                onClick = onCreatePlaylistClick,
+                containerColor = NovaPrimary,
+                contentColor = Color.White,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 80.dp)
+                    .testTag("create_playlist_fab")
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Create Playlist")
             }
         }
     }

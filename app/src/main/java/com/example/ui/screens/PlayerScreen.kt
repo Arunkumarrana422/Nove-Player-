@@ -50,6 +50,7 @@ import com.example.data.repository.UserSettings
 import com.example.domain.model.AspectRatioMode
 import com.example.domain.model.Video
 import com.example.player.NovaPlayerManager
+import com.example.ui.components.ContinueWatchingBanner
 import com.example.ui.components.GestureHudState
 import com.example.ui.components.GestureOverlayIndicator
 import com.example.ui.components.PlaybackSettingsBottomSheet
@@ -100,6 +101,38 @@ fun PlayerScreen(
     var seekDragDeltaMs by remember { mutableLongStateOf(0L) }
     var isSeekingGesture by remember { mutableStateOf(false) }
 
+    val video = currentVideo
+
+    // Continue from where you stopped banner state
+    var showResumeBanner by remember(video?.id) {
+        val lastPos = video?.lastPositionMs ?: 0L
+        val dur = video?.durationMs ?: 0L
+        mutableStateOf(lastPos > 3000L && (dur == 0L || lastPos < dur - 5000L))
+    }
+
+    // Auto-dismiss resume banner after 6 seconds
+    LaunchedEffect(showResumeBanner) {
+        if (showResumeBanner) {
+            delay(6000)
+            showResumeBanner = false
+        }
+    }
+
+    // Auto-rotation based on aspect ratio:
+    // 9:16 (vertical/portrait video) -> no sensor auto rotation (locked to portrait)
+    // 16:9 (horizontal video) -> sensor auto rotation enabled
+    LaunchedEffect(video, isLocked) {
+        if (isLocked) return@LaunchedEffect
+        if (video != null) {
+            val isPortraitVideo = (video.height > video.width && video.height > 0 && video.width > 0)
+            activity?.requestedOrientation = if (isPortraitVideo) {
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_SENSOR
+            }
+        }
+    }
+
     // Auto-hide controls timer
     LaunchedEffect(areControlsVisible, isPlaying, isLocked) {
         if (areControlsVisible && isPlaying && !isLocked) {
@@ -116,7 +149,7 @@ fun PlayerScreen(
         }
     }
 
-    // Immersive Fullscreen Mode
+    // Immersive Fullscreen Mode & Brightness Management
     DisposableEffect(Unit) {
         val window = activity?.window
         if (window != null) {
@@ -124,12 +157,17 @@ fun PlayerScreen(
             insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             insetsController.hide(WindowInsetsCompat.Type.systemBars())
         }
+        // Apply saved video player brightness
+        playerManager.applyPlayerBrightness(activity)
+
         onDispose {
             val win = activity?.window
             if (win != null) {
                 val insetsController = WindowCompat.getInsetsController(win, win.decorView)
                 insetsController.show(WindowInsetsCompat.Type.systemBars())
                 activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                // Restore phone's automatic / default system brightness
+                playerManager.restoreSystemBrightness(activity)
             }
         }
     }
@@ -142,7 +180,6 @@ fun PlayerScreen(
         }
     }
 
-    val video = currentVideo
     if (video == null) {
         Box(
             modifier = Modifier.fillMaxSize().background(Color.Black),
@@ -316,6 +353,21 @@ fun PlayerScreen(
                 }
             }
         }
+
+        // Continue Watching Floating Banner (Photo 2)
+        ContinueWatchingBanner(
+            isVisible = showResumeBanner,
+            onStartOver = {
+                playerManager.seekTo(0L)
+                showResumeBanner = false
+            },
+            onDismiss = {
+                showResumeBanner = false
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = if (areControlsVisible) 115.dp else 24.dp)
+        )
 
         // MX Player Controls Overlay
         PlayerControlsOverlay(
