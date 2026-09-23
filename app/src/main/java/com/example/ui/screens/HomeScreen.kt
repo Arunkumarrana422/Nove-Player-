@@ -70,6 +70,8 @@ fun HomeScreen(
     folders: List<VideoFolder>,
     playlists: List<Playlist>,
     allVideosCount: Int,
+    currentPlayingVideoId: String? = null,
+    isPlaying: Boolean = false,
     onPlayVideo: (Video, List<Video>) -> Unit,
     onOpenStreamDialog: () -> Unit,
     onNavigateToVideos: () -> Unit,
@@ -145,6 +147,7 @@ fun HomeScreen(
                     items(continueWatching) { video ->
                         ContinueWatchingCard(
                             video = video,
+                            isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                             onClick = { onPlayVideo(video, continueWatching) }
                         )
                     }
@@ -168,6 +171,7 @@ fun HomeScreen(
                     VideoCard(
                         video = video,
                         onClick = { onPlayVideo(video, recentVideos) },
+                        isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                         onToggleFavorite = { onToggleFavorite(video) },
                         onAddToPlaylist = { onAddToPlaylist(video) },
                         onShowInfo = { onShowVideoInfo(video) },
@@ -306,14 +310,24 @@ private fun SectionHeader(
 @Composable
 private fun ContinueWatchingCard(
     video: Video,
+    isCurrentlyPlaying: Boolean = false,
     onClick: () -> Unit
 ) {
+    val isPartiallyWatched = video.isPartiallyWatched || (video.lastPositionMs > 5000L && video.progressFraction in 0.02f..0.95f)
+    val halfWatchedColor = Color(0xFF38BDF8) // Soft Light Blue
+    val titleColor = when {
+        isCurrentlyPlaying -> NovaAccent
+        isPartiallyWatched -> halfWatchedColor
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
     Card(
         modifier = Modifier
             .width(210.dp)
             .clickable(onClick = onClick)
             .testTag("continue_card_${video.id}"),
         shape = RoundedCornerShape(12.dp),
+        border = if (isCurrentlyPlaying) androidx.compose.foundation.BorderStroke(1.5.dp, NovaAccent) else null,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column {
@@ -327,26 +341,51 @@ private fun ContinueWatchingCard(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(listOf(Color.Transparent, Color(0x99000000)))
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                if (isCurrentlyPlaying) {
                     Box(
                         modifier = Modifier
-                            .size(34.dp)
-                            .background(NovaPrimary.copy(alpha = 0.85f), CircleShape),
+                            .fillMaxSize()
+                            .background(Color(0x88000000)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Row(
+                            modifier = Modifier
+                                .background(Color(0xCC000000), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 7.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            com.example.ui.components.NowPlayingEqualizer(barColor = NovaAccent)
+                            Text(
+                                text = "PLAYING",
+                                color = NovaAccent,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(listOf(Color.Transparent, Color(0x99000000)))
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(NovaPrimary.copy(alpha = 0.85f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
 
@@ -356,7 +395,7 @@ private fun ContinueWatchingCard(
                         .fillMaxWidth()
                         .height(3.5.dp)
                         .align(Alignment.BottomCenter),
-                    color = NovaAccent,
+                    color = if (isPartiallyWatched) halfWatchedColor else NovaAccent,
                     trackColor = Color(0x55FFFFFF)
                 )
             }
@@ -365,17 +404,30 @@ private fun ContinueWatchingCard(
                 Text(
                     text = video.title,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = titleColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "${Video.formatDuration(video.lastPositionMs)} / ${video.durationFormatted}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = NovaAccent,
-                    fontSize = 11.sp
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${Video.formatDuration(video.lastPositionMs)} / ${video.durationFormatted}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isPartiallyWatched) halfWatchedColor else NovaAccent,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        text = "${(video.progressFraction * 100).toInt()}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = halfWatchedColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

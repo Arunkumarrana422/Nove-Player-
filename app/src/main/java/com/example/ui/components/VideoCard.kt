@@ -1,5 +1,12 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,7 +31,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAdd
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -44,24 +50,82 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.example.domain.model.Video
 import com.example.ui.theme.NovaAccent
 import com.example.ui.theme.NovaPrimary
-import com.example.ui.theme.NovaSecondary
+
+val HalfWatchedColor = Color(0xFF38BDF8) // Soft Light Blue for halfway watched videos
+
+@Composable
+fun NowPlayingEqualizer(
+    modifier: Modifier = Modifier,
+    barColor: Color = NovaAccent
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "equalizer")
+    val h1 by infiniteTransition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.95f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(380, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "h1"
+    )
+    val h2 by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 0.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(520, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "h2"
+    )
+    val h3 by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(450, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "h3"
+    )
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .height(13.dp * h1.coerceIn(0.2f, 1f))
+                .background(barColor, RoundedCornerShape(1.5.dp))
+        )
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .height(13.dp * h2.coerceIn(0.2f, 1f))
+                .background(barColor, RoundedCornerShape(1.5.dp))
+        )
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .height(13.dp * h3.coerceIn(0.2f, 1f))
+                .background(barColor, RoundedCornerShape(1.5.dp))
+        )
+    }
+}
 
 @Composable
 fun VideoCard(
     video: Video,
     onClick: () -> Unit,
+    isCurrentlyPlaying: Boolean = false,
     onToggleFavorite: () -> Unit = {},
     onAddToPlaylist: () -> Unit = {},
     onShowInfo: () -> Unit = {},
@@ -70,16 +134,25 @@ fun VideoCard(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
+    val isPartiallyWatched = video.isPartiallyWatched || (video.lastPositionMs > 5000L && video.progressFraction in 0.02f..0.95f)
+
+    val titleColor = when {
+        isCurrentlyPlaying -> NovaAccent
+        isPartiallyWatched -> HalfWatchedColor
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .testTag("video_card_${video.id}"),
         shape = RoundedCornerShape(12.dp),
+        border = if (isCurrentlyPlaying) BorderStroke(1.5.dp, NovaAccent) else null,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isCurrentlyPlaying) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f) else MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentlyPlaying) 4.dp else 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -87,7 +160,7 @@ fun VideoCard(
                 .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Thumbnail Box with Duration Badge & Format Pill
+            // Thumbnail Box with Duration Badge & Playing Indicator
             Box(
                 modifier = Modifier
                     .width(130.dp)
@@ -99,29 +172,54 @@ fun VideoCard(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Fallback Play icon overlay in center
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color(0x99000000))
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                // Playing state overlay or Play Icon overlay
+                if (isCurrentlyPlaying) {
                     Box(
                         modifier = Modifier
-                            .size(28.dp)
-                            .background(Color(0x66000000), CircleShape),
+                            .fillMaxSize()
+                            .background(Color(0x88000000)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Row(
+                            modifier = Modifier
+                                .background(Color(0xCC000000), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 7.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            NowPlayingEqualizer(barColor = NovaAccent)
+                            Text(
+                                text = "PLAYING",
+                                color = NovaAccent,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.Transparent, Color(0x99000000))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .background(Color(0x66000000), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
 
@@ -149,9 +247,9 @@ fun VideoCard(
                         progress = { video.progressFraction },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(3.dp)
+                            .height(3.5.dp)
                             .align(Alignment.BottomCenter),
-                        color = NovaAccent,
+                        color = if (isPartiallyWatched) HalfWatchedColor else NovaAccent,
                         trackColor = Color(0x66FFFFFF),
                     )
                 }
@@ -166,19 +264,31 @@ fun VideoCard(
                     .padding(vertical = 2.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = video.title,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp,
-                        lineHeight = 18.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (isCurrentlyPlaying) {
+                        NowPlayingEqualizer(
+                            modifier = Modifier.size(14.dp),
+                            barColor = NovaAccent
+                        )
+                    }
+                    Text(
+                        text = video.title,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            lineHeight = 18.sp
+                        ),
+                        color = titleColor,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(5.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -187,7 +297,7 @@ fun VideoCard(
                     Text(
                         text = video.folderName,
                         style = MaterialTheme.typography.bodySmall,
-                        color = NovaAccent,
+                        color = if (isPartiallyWatched) HalfWatchedColor else NovaAccent,
                         fontSize = 11.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -218,6 +328,17 @@ fun VideoCard(
                             )
                         }
                     }
+                }
+
+                if (isPartiallyWatched) {
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "Resume at ${Video.formatDuration(video.lastPositionMs)} (${(video.progressFraction * 100).toInt()}%)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HalfWatchedColor.copy(alpha = 0.9f),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
 
@@ -297,17 +418,27 @@ fun VideoCard(
 fun VideoGridCard(
     video: Video,
     onClick: () -> Unit,
+    isCurrentlyPlaying: Boolean = false,
     onToggleFavorite: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val isPartiallyWatched = video.isPartiallyWatched || (video.lastPositionMs > 5000L && video.progressFraction in 0.02f..0.95f)
+
+    val titleColor = when {
+        isCurrentlyPlaying -> NovaAccent
+        isPartiallyWatched -> HalfWatchedColor
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .testTag("video_grid_card_${video.id}"),
         shape = RoundedCornerShape(12.dp),
+        border = if (isCurrentlyPlaying) BorderStroke(1.5.dp, NovaAccent) else null,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentlyPlaying) 4.dp else 2.dp)
     ) {
         Column {
             Box(
@@ -320,28 +451,53 @@ fun VideoGridCard(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color(0x99000000))
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                if (isCurrentlyPlaying) {
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .background(Color(0x66000000), CircleShape),
+                            .fillMaxSize()
+                            .background(Color(0x88000000)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Row(
+                            modifier = Modifier
+                                .background(Color(0xCC000000), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            NowPlayingEqualizer(barColor = NovaAccent)
+                            Text(
+                                text = "PLAYING",
+                                color = NovaAccent,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.Transparent, Color(0x99000000))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(Color(0x66000000), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
 
@@ -369,7 +525,7 @@ fun VideoGridCard(
                             .fillMaxWidth()
                             .height(3.dp)
                             .align(Alignment.BottomCenter),
-                        color = NovaAccent,
+                        color = if (isPartiallyWatched) HalfWatchedColor else NovaAccent,
                         trackColor = Color(0x66FFFFFF),
                     )
                 }
@@ -379,7 +535,7 @@ fun VideoGridCard(
                 Text(
                     text = video.title,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = titleColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -391,7 +547,7 @@ fun VideoGridCard(
                     Text(
                         text = video.folderName,
                         style = MaterialTheme.typography.bodySmall,
-                        color = NovaAccent,
+                        color = if (isPartiallyWatched) HalfWatchedColor else NovaAccent,
                         fontSize = 10.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

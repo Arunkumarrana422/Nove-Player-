@@ -61,6 +61,8 @@ fun VideosScreen(
     sortOption: SortOption,
     viewMode: ViewMode,
     isScanning: Boolean,
+    currentPlayingVideoId: String? = null,
+    isPlaying: Boolean = false,
     onSortChange: (SortOption) -> Unit,
     onViewModeChange: (ViewMode) -> Unit,
     onRefresh: () -> Unit,
@@ -197,6 +199,7 @@ fun VideosScreen(
                     VideoCard(
                         video = video,
                         onClick = { onPlayVideo(video, videos) },
+                        isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                         onToggleFavorite = { onToggleFavorite(video) },
                         onAddToPlaylist = { onAddToPlaylist(video) },
                         onShowInfo = { onShowVideoInfo(video) },
@@ -216,6 +219,7 @@ fun VideosScreen(
                     VideoGridCard(
                         video = video,
                         onClick = { onPlayVideo(video, videos) },
+                        isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                         onToggleFavorite = { onToggleFavorite(video) }
                     )
                 }

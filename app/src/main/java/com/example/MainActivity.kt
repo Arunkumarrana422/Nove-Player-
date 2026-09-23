@@ -304,6 +304,7 @@ fun NovaPlayerApp(
                             isPlaying = isPlaying,
                             currentPosMs = currentPosMs,
                             durationMs = durationMs,
+                            exoPlayer = viewModel.playerManager.exoPlayer,
                             onExpand = {
                                 navController.navigate(Screen.Player.route)
                             },
@@ -390,7 +391,7 @@ fun NovaPlayerApp(
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize(),
-                        userScrollEnabled = (selectedFolder == null && selectedPlaylist == null)
+                        userScrollEnabled = true
                     ) { page ->
                         when (page) {
                             0 -> HomeScreen(
@@ -400,6 +401,8 @@ fun NovaPlayerApp(
                                 folders = folders,
                                 playlists = playlists,
                                 allVideosCount = allVideos.size,
+                                currentPlayingVideoId = currentVideoPlaying?.id,
+                                isPlaying = isPlaying,
                                 onPlayVideo = { video, playlist ->
                                     viewModel.playerManager.playVideo(video, playlist)
                                     navController.navigate(Screen.Player.route)
@@ -429,6 +432,8 @@ fun NovaPlayerApp(
                                 sortOption = userSettings.sortOption,
                                 viewMode = userSettings.viewMode,
                                 isScanning = isScanning,
+                                currentPlayingVideoId = currentVideoPlaying?.id,
+                                isPlaying = isPlaying,
                                 onSortChange = { viewModel.setSortOption(it) },
                                 onViewModeChange = { viewModel.setViewMode(it) },
                                 onRefresh = { viewModel.scanLibrary() },
@@ -445,6 +450,8 @@ fun NovaPlayerApp(
                             2 -> FoldersScreen(
                                 folders = folders,
                                 selectedFolder = selectedFolder,
+                                currentPlayingVideoId = currentVideoPlaying?.id,
+                                isPlaying = isPlaying,
                                 onSelectFolder = { viewModel.selectFolder(it) },
                                 onPlayVideo = { video, playlist ->
                                     viewModel.playerManager.playVideo(video, playlist)
@@ -460,6 +467,8 @@ fun NovaPlayerApp(
                                 playlists = playlists,
                                 selectedPlaylist = selectedPlaylist,
                                 playlistVideosFlow = { id -> viewModel.getPlaylistVideos(id) },
+                                currentPlayingVideoId = currentVideoPlaying?.id,
+                                isPlaying = isPlaying,
                                 onSelectPlaylist = { viewModel.selectPlaylist(it) },
                                 onCreatePlaylistClick = { showCreatePlaylistDialog = true },
                                 onDeletePlaylist = { viewModel.deletePlaylist(it) },
@@ -497,6 +506,8 @@ fun NovaPlayerApp(
                 composable(Screen.Favorites.route) {
                     FavoritesScreen(
                         favorites = favoriteVideos,
+                        currentPlayingVideoId = currentVideoPlaying?.id,
+                        isPlaying = isPlaying,
                         onPlayVideo = { video, playlist ->
                             viewModel.playerManager.playVideo(video, playlist)
                             navController.navigate(Screen.Player.route)
@@ -511,6 +522,8 @@ fun NovaPlayerApp(
                 composable(Screen.History.route) {
                     HistoryScreen(
                         history = watchHistory,
+                        currentPlayingVideoId = currentVideoPlaying?.id,
+                        isPlaying = isPlaying,
                         onPlayVideo = { video, playlist ->
                             viewModel.playerManager.playVideo(video, playlist)
                             navController.navigate(Screen.Player.route)
@@ -528,6 +541,8 @@ fun NovaPlayerApp(
                         query = searchQuery,
                         searchResults = searchResults,
                         recentSearches = recentSearches,
+                        currentPlayingVideoId = currentVideoPlaying?.id,
+                        isPlaying = isPlaying,
                         onQueryChange = { viewModel.setSearchQuery(it) },
                         onBack = { navController.popBackStack() },
                         onDeleteRecentSearch = { viewModel.deleteSearchQuery(it) },

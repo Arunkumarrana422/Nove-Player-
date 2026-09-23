@@ -34,6 +34,9 @@ data class Video(
     val progressFraction: Float
         get() = if (durationMs > 0) (lastPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
 
+    val isPartiallyWatched: Boolean
+        get() = lastPositionMs > 5000L && !isCompleted && progressFraction in 0.02f..0.95f
+
     companion object {
         fun formatDuration(ms: Long): String {
             if (ms <= 0) return "00:00"

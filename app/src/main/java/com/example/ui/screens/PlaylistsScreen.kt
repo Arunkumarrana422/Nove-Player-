@@ -54,6 +54,8 @@ fun PlaylistsScreen(
     playlists: List<Playlist>,
     selectedPlaylist: Playlist?,
     playlistVideosFlow: ((Long) -> Flow<List<Video>>)?,
+    currentPlayingVideoId: String? = null,
+    isPlaying: Boolean = false,
     onSelectPlaylist: (Playlist?) -> Unit,
     onCreatePlaylistClick: () -> Unit,
     onDeletePlaylist: (Long) -> Unit,
@@ -160,6 +162,7 @@ fun PlaylistsScreen(
                         VideoCard(
                             video = video,
                             onClick = { onPlayVideo(video, playlistVideos) },
+                            isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                             onToggleFavorite = { onToggleFavorite(video) },
                             onAddToPlaylist = { onAddToPlaylist(video) },
                             onShowInfo = { onShowVideoInfo(video) },

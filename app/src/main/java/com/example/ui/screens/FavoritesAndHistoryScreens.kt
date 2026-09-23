@@ -41,6 +41,8 @@ import com.example.ui.theme.NovaPrimary
 @Composable
 fun FavoritesScreen(
     favorites: List<Video>,
+    currentPlayingVideoId: String? = null,
+    isPlaying: Boolean = false,
     onPlayVideo: (Video, List<Video>) -> Unit,
     onToggleFavorite: (Video) -> Unit,
     onAddToPlaylist: (Video) -> Unit,
@@ -95,6 +97,7 @@ fun FavoritesScreen(
                     VideoCard(
                         video = video,
                         onClick = { onPlayVideo(video, favorites) },
+                        isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                         onToggleFavorite = { onToggleFavorite(video) },
                         onAddToPlaylist = { onAddToPlaylist(video) },
                         onShowInfo = { onShowVideoInfo(video) },
@@ -109,6 +112,8 @@ fun FavoritesScreen(
 @Composable
 fun HistoryScreen(
     history: List<Video>,
+    currentPlayingVideoId: String? = null,
+    isPlaying: Boolean = false,
     onPlayVideo: (Video, List<Video>) -> Unit,
     onRemoveFromHistory: (String) -> Unit,
     onClearAllHistory: () -> Unit,
@@ -163,6 +168,7 @@ fun HistoryScreen(
                     VideoCard(
                         video = video,
                         onClick = { onPlayVideo(video, history) },
+                        isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                         onToggleFavorite = { onToggleFavorite(video) },
                         onAddToPlaylist = { onAddToPlaylist(video) },
                         onShowInfo = { onShowVideoInfo(video) },

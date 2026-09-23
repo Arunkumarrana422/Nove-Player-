@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -32,25 +35,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import com.example.domain.model.Video
 import com.example.ui.theme.NovaAccent
 import com.example.ui.theme.NovaPrimary
 
+@OptIn(UnstableApi::class)
 @Composable
 fun MiniPlayerView(
     video: Video?,
     isPlaying: Boolean,
     currentPosMs: Long,
     durationMs: Long,
+    exoPlayer: ExoPlayer? = null,
     onExpand: () -> Unit,
     onPlayPause: () -> Unit,
     onClose: () -> Unit,
@@ -84,16 +90,41 @@ fun MiniPlayerView(
                             .padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Small Thumbnail
+                        // Live Playing Video Surface or Fallback Thumbnail
                         Box(
                             modifier = Modifier
-                                .size(width = 56.dp, height = 40.dp)
-                                .clip(RoundedCornerShape(6.dp))
+                                .size(width = 68.dp, height = 46.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black)
                         ) {
-                            VideoThumbnailView(
-                                video = video,
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            if (exoPlayer != null) {
+                                AndroidView(
+                                    factory = { ctx ->
+                                        PlayerView(ctx).apply {
+                                            player = exoPlayer
+                                            useController = false
+                                            layoutParams = FrameLayout.LayoutParams(
+                                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                                ViewGroup.LayoutParams.MATCH_PARENT
+                                            )
+                                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                                            setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+                                        }
+                                    },
+                                    update = { playerView ->
+                                        if (playerView.player != exoPlayer) {
+                                            playerView.player = exoPlayer
+                                        }
+                                        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                                    },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                VideoThumbnailView(
+                                    video = video,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.width(10.dp))
@@ -107,12 +138,18 @@ fun MiniPlayerView(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Text(
-                                text = "${Video.formatDuration(currentPosMs)} / ${Video.formatDuration(durationMs.coerceAtLeast(video.durationMs))}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = NovaAccent,
-                                fontSize = 11.sp
-                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "${Video.formatDuration(currentPosMs)} / ${Video.formatDuration(durationMs.coerceAtLeast(video.durationMs))}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = NovaAccent,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
 
                         // Play/Pause Action
@@ -124,7 +161,7 @@ fun MiniPlayerView(
                                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = if (isPlaying) "Pause" else "Play",
                                 tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(26.dp)
                             )
                         }
 

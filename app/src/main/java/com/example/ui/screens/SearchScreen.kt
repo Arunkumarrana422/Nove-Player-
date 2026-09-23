@@ -56,6 +56,8 @@ fun SearchScreen(
     query: String,
     searchResults: List<Video>,
     recentSearches: List<String>,
+    currentPlayingVideoId: String? = null,
+    isPlaying: Boolean = false,
     onQueryChange: (String) -> Unit,
     onBack: () -> Unit,
     onDeleteRecentSearch: (String) -> Unit,
@@ -209,6 +211,7 @@ fun SearchScreen(
                         VideoCard(
                             video = video,
                             onClick = { onPlayVideo(video, searchResults) },
+                            isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                             onToggleFavorite = { onToggleFavorite(video) },
                             onAddToPlaylist = { onAddToPlaylist(video) },
                             onShowInfo = { onShowVideoInfo(video) },

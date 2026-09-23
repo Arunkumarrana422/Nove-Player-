@@ -51,6 +51,8 @@ import com.example.ui.theme.NovaSecondary
 fun FoldersScreen(
     folders: List<VideoFolder>,
     selectedFolder: VideoFolder?,
+    currentPlayingVideoId: String? = null,
+    isPlaying: Boolean = false,
     onSelectFolder: (VideoFolder?) -> Unit,
     onPlayVideo: (Video, List<Video>) -> Unit,
     onToggleFavorite: (Video) -> Unit,
@@ -126,6 +128,7 @@ fun FoldersScreen(
                     VideoCard(
                         video = video,
                         onClick = { onPlayVideo(video, selectedFolder.videos) },
+                        isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                         onToggleFavorite = { onToggleFavorite(video) },
                         onAddToPlaylist = { onAddToPlaylist(video) },
                         onShowInfo = { onShowVideoInfo(video) },
