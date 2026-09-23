@@ -89,15 +89,9 @@ fun MiniPlayerView(
                             modifier = Modifier
                                 .size(width = 56.dp, height = 40.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF0F172A))
                         ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(video.uri)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = video.title,
-                                contentScale = ContentScale.Crop,
+                            VideoThumbnailView(
+                                video = video,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }

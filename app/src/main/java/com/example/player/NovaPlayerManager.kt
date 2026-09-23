@@ -191,6 +191,18 @@ class NovaPlayerManager(private val context: Context) {
         _isPlaying.value = false
     }
 
+    fun stopAndDismiss() {
+        try {
+            exoPlayer.stop()
+            exoPlayer.clearMediaItems()
+        } catch (_: Exception) {}
+        _currentVideo.value = null
+        _isPlaying.value = false
+        _isMiniPlayerActive.value = false
+        _currentPositionMs.value = 0L
+        _durationMs.value = 0L
+    }
+
     fun togglePlayPause() {
         if (exoPlayer.isPlaying) {
             pause()

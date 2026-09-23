@@ -93,15 +93,9 @@ fun VideoCard(
                     .width(130.dp)
                     .height(82.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF0F172A))
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(video.uri)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = video.title,
-                    contentScale = ContentScale.Crop,
+                VideoThumbnailView(
+                    video = video,
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -336,15 +330,9 @@ fun VideoGridCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
-                    .background(Color(0xFF0F172A))
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(video.uri)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = video.title,
-                    contentScale = ContentScale.Crop,
+                VideoThumbnailView(
+                    video = video,
                     modifier = Modifier.fillMaxSize()
                 )
 

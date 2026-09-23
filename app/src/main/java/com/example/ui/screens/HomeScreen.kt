@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.example.ui.components.VideoThumbnailView
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -151,37 +152,12 @@ fun HomeScreen(
             }
         }
 
-        // FEATURED ONLINE STREAMS SECTION
-        if (featuredStreams.isNotEmpty()) {
-            item {
-                SectionHeader(
-                    title = "Featured Online Streams",
-                    subtitle = "High quality 4K, HLS and Sci-Fi open movies",
-                    actionText = "Add Stream",
-                    onActionClick = onOpenStreamDialog
-                )
-
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(bottom = 16.dp)
-                ) {
-                    items(featuredStreams) { stream ->
-                        FeaturedStreamCard(
-                            video = stream,
-                            onClick = { onPlayVideo(stream, featuredStreams) }
-                        )
-                    }
-                }
-            }
-        }
-
         // RECENT VIDEOS / ALL VIDEOS SECTION
         if (recentVideos.isNotEmpty()) {
             item {
                 SectionHeader(
-                    title = "Recently Added & Played",
-                    subtitle = "$allVideosCount total videos available",
+                    title = "Your Videos",
+                    subtitle = "$allVideosCount videos on device",
                     actionText = "View All",
                     onActionClick = onNavigateToVideos
                 )
@@ -345,15 +321,9 @@ private fun ContinueWatchingCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(115.dp)
-                    .background(Color(0xFF0F172A))
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(video.uri)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = video.title,
-                    contentScale = ContentScale.Crop,
+                VideoThumbnailView(
+                    video = video,
                     modifier = Modifier.fillMaxSize()
                 )
 

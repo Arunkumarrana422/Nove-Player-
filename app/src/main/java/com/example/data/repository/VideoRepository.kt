@@ -32,38 +32,11 @@ class VideoRepository(private val context: Context) {
     private val folderDao = database.folderDao()
 
     suspend fun initializeDatabase() = withContext(Dispatchers.IO) {
-        val existingOnline = videoDao.getOnlineVideos().firstOrNull()
-        if (existingOnline.isNullOrEmpty()) {
-            val sampleEntities = SampleMediaSource.sampleOnlineVideos.map { it.toEntity() }
-            videoDao.insertVideos(sampleEntities)
-        }
-
-        // Create default playlists if none exist
-        val playlists = playlistDao.getAllPlaylists().firstOrNull()
-        if (playlists.isNullOrEmpty()) {
-            val favPlaylistId = playlistDao.insertPlaylist(
-                PlaylistEntity(
-                    name = "Quick Favorites",
-                    description = "Your favorite videos and streams",
-                    thumbnailUri = SampleMediaSource.sampleOnlineVideos.first().uri
-                )
-            )
-            val demoPlaylistId = playlistDao.insertPlaylist(
-                PlaylistEntity(
-                    name = "Movie Trailers",
-                    description = "High quality 4K and Full HD open-source film trailers",
-                    thumbnailUri = SampleMediaSource.sampleOnlineVideos.getOrNull(1)?.uri ?: ""
-                )
-            )
-            SampleMediaSource.sampleOnlineVideos.take(3).forEachIndexed { index, video ->
-                playlistDao.addVideoToPlaylist(
-                    PlaylistItemEntity(
-                        playlistId = demoPlaylistId,
-                        videoId = video.id,
-                        orderIndex = index
-                    )
-                )
-            }
+        try {
+            // Delete all dummy/sample pre-seeded videos
+            videoDao.deleteSampleVideos()
+        } catch (e: Exception) {
+            Log.e("VideoRepository", "Error cleaning sample videos", e)
         }
     }
 
@@ -152,6 +125,12 @@ class VideoRepository(private val context: Context) {
             if (videos.isNotEmpty()) {
                 val entities = videos.map { it.toEntity() }
                 videoDao.insertVideos(entities)
+            }
+            // Remove local videos that no longer exist on device storage
+            val currentLocalIds = videos.map { it.id }.toSet()
+            val allDbVideos = videoDao.getAllVideosSync()
+            allDbVideos.filter { !it.isOnline && !currentLocalIds.contains(it.id) }.forEach {
+                videoDao.deleteVideo(it.id)
             }
         } catch (e: Exception) {
             Log.e("VideoRepository", "Error scanning local videos", e)

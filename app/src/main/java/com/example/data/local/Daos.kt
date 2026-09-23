@@ -12,6 +12,12 @@ interface VideoDao {
     @Query("SELECT * FROM videos ORDER BY dateAdded DESC")
     fun getAllVideos(): Flow<List<VideoEntity>>
 
+    @Query("SELECT * FROM videos")
+    suspend fun getAllVideosSync(): List<VideoEntity>
+
+    @Query("DELETE FROM videos WHERE id LIKE 'online_%'")
+    suspend fun deleteSampleVideos()
+
     @Query("SELECT * FROM videos WHERE isFavorite = 1 ORDER BY dateAdded DESC")
     fun getFavoriteVideos(): Flow<List<VideoEntity>>
 

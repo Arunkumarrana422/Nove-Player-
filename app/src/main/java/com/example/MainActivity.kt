@@ -78,6 +78,13 @@ class MainActivity : ComponentActivity() {
         viewModel.setStoragePermission(granted)
     }
 
+    private val mediaObserver = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            super.onChange(selfChange, uri)
+            viewModel.scanLibrary()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -94,6 +101,27 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        try {
+            contentResolver.registerContentObserver(
+                android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                true,
+                mediaObserver
+            )
+        } catch (_: Exception) {}
+        if (viewModel.hasStoragePermission.value) {
+            viewModel.scanLibrary()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try {
+            contentResolver.unregisterContentObserver(mediaObserver)
+        } catch (_: Exception) {}
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -215,6 +243,7 @@ fun NovaPlayerApp(
                         else -> "Nova Player"
                     },
                     themePreference = userSettings.theme,
+                    isRefreshing = isScanning,
                     onSearchClick = { navController.navigate(Screen.Search.route) },
                     onRefreshClick = { viewModel.scanLibrary() },
                     onThemeToggle = {
@@ -242,7 +271,7 @@ fun NovaPlayerApp(
                                 viewModel.playerManager.togglePlayPause()
                             },
                             onClose = {
-                                viewModel.playerManager.pause()
+                                viewModel.playerManager.stopAndDismiss()
                             }
                         )
                     }
@@ -258,13 +287,18 @@ fun NovaPlayerApp(
                             NavigationBarItem(
                                 selected = selected,
                                 onClick = {
+                                    if (item.route == Screen.Folders.route) {
+                                        viewModel.selectFolder(null)
+                                    } else if (item.route == Screen.Playlists.route) {
+                                        viewModel.selectPlaylist(null)
+                                    }
                                     if (currentRoute != item.route) {
                                         navController.navigate(item.route) {
                                             popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
+                                                saveState = false
                                             }
                                             launchSingleTop = true
-                                            restoreState = true
+                                            restoreState = false
                                         }
                                     }
                                 },

@@ -1,5 +1,11 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -25,8 +31,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -43,11 +51,23 @@ import com.example.ui.theme.NovaSecondary
 fun NovaAppBar(
     title: String = "Nova Player",
     themePreference: ThemePreference = ThemePreference.DARK,
+    isRefreshing: Boolean = false,
     onSearchClick: () -> Unit = {},
     onRefreshClick: () -> Unit = {},
     onThemeToggle: () -> Unit = {},
     onSettingsClick: () -> Unit = {}
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "refresh_spin")
+    val spinRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "spin_angle"
+    )
+
     Surface(
         color = MaterialTheme.colorScheme.background,
         shadowElevation = 2.dp
@@ -102,7 +122,8 @@ fun NovaAppBar(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Refresh Library",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = if (isRefreshing) NovaAccent else MaterialTheme.colorScheme.onBackground,
+                        modifier = if (isRefreshing) Modifier.rotate(spinRotation) else Modifier
                     )
                 }
                 IconButton(
