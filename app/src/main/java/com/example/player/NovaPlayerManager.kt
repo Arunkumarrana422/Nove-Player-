@@ -274,10 +274,8 @@ class NovaPlayerManager(private val context: Context) {
             .setContentTitle(video.title)
             .setContentText(video.folderName)
             .setContentIntent(pendingIntent)
-            .setDeleteIntent(createVideoActionPendingIntent("VIDEO_STOP"))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setOngoing(isPlaying)
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setShowActionsInCompactView(0, 1)

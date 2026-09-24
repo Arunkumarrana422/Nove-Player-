@@ -192,10 +192,8 @@ class AudioPlayerManager(private val context: Context) {
             .setContentTitle(song.title)
             .setContentText(song.artist)
             .setContentIntent(pendingIntent)
-            .setDeleteIntent(createActionPendingIntent("ACTION_STOP"))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setOngoing(isPlaying)
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setShowActionsInCompactView(0, 1, 2)
