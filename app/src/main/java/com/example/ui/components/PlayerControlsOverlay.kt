@@ -288,7 +288,7 @@ fun PlayerControlsOverlay(
                     modifier = Modifier
                         .size(72.dp)
                         .background(
-                            Brush.linearGradient(listOf(NovaPrimary, NovaSecondary)),
+                            NovaAccent,
                             shape = CircleShape
                         )
                         .clip(CircleShape),
@@ -301,7 +301,7 @@ fun PlayerControlsOverlay(
                         Icon(
                             imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = if (isPlaying) "Pause" else "Play",
-                            tint = Color.White,
+                            tint = Color(0xFF0F172A),
                             modifier = Modifier.size(42.dp)
                         )
                     }

@@ -114,7 +114,7 @@ fun FoldersScreen(
                             onPlayVideo(selectedFolder.videos.first(), selectedFolder.videos)
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = NovaPrimary),
+                    colors = ButtonDefaults.buttonColors(containerColor = NovaAccent, contentColor = Color(0xFF0F172A)),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                 ) {

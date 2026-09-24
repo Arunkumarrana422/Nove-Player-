@@ -275,76 +275,45 @@ fun FullMusicPlayerBottomSheet(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(
-                                            NovaPrimary.copy(alpha = 0.85f),
-                                            NovaSecondary.copy(alpha = 0.95f),
-                                            Color(0xFF0F172A)
-                                        )
-                                    )
-                                ),
+                            modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.padding(24.dp)
-                            ) {
+                            val albumArtUri = remember(pagerSong.albumId) {
+                                ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), pagerSong.albumId)
+                            }
+                            var hasError by remember(pagerSong.id) { mutableStateOf(false) }
+
+                            if (!hasError) {
+                                AsyncImage(
+                                    model = albumArtUri,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    onError = { hasError = true }
+                                )
+                            }
+                            if (hasError) {
                                 Box(
                                     modifier = Modifier
-                                        .size(110.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color.White.copy(alpha = 0.15f)),
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(
+                                                    NovaPrimary.copy(alpha = 0.85f),
+                                                    NovaSecondary.copy(alpha = 0.95f),
+                                                    Color(0xFF0F172A)
+                                                )
+                                            )
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    val albumArtUri = remember(pagerSong.albumId) {
-                                        ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), pagerSong.albumId)
-                                    }
-                                    var hasError by remember(pagerSong.id) { mutableStateOf(false) }
-
-                                    if (!hasError) {
-                                        AsyncImage(
-                                            model = albumArtUri,
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                            onError = { hasError = true }
-                                        )
-                                    }
-                                    if (hasError) {
-                                        Icon(
-                                            imageVector = Icons.Default.MusicNote,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(52.dp)
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.MusicNote,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(64.dp)
+                                    )
                                 }
-                                Spacer(modifier = Modifier.height(20.dp))
-                                Text(
-                                    text = pagerSong.title,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 20.sp,
-                                        color = Color.White
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = "${pagerSong.artist} • ${pagerSong.album}",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        color = Color.White.copy(alpha = 0.8f)
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    textAlign = TextAlign.Center
-                                )
                             }
                         }
                     }

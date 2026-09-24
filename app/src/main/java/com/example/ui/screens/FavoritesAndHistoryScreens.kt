@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.example.domain.model.Video
 import com.example.ui.components.EmptyStateView
 import com.example.ui.components.VideoCard
+import com.example.ui.theme.NovaAccent
 import com.example.ui.theme.NovaPrimary
 
 @Composable
@@ -70,7 +71,7 @@ fun FavoritesScreen(
 
                 Button(
                     onClick = { onPlayVideo(favorites.first(), favorites) },
-                    colors = ButtonDefaults.buttonColors(containerColor = NovaPrimary),
+                    colors = ButtonDefaults.buttonColors(containerColor = NovaAccent, contentColor = Color(0xFF0F172A)),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                 ) {
