@@ -370,8 +370,44 @@ class AudioPlayerManager(private val context: Context) {
         exoPlayer.setPlaybackSpeed(speed)
     }
 
+    private var equalizer: android.media.audiofx.Equalizer? = null
+
     fun setPreset(name: String) {
         _selectedPreset.value = name
+        applyEqualizer(name)
+    }
+
+    private fun applyEqualizer(presetName: String) {
+        try {
+            val audioSessionId = exoPlayer.audioSessionId
+            if (audioSessionId != android.media.audiofx.AudioEffect.ERROR_BAD_VALUE) {
+                if (equalizer == null) {
+                    equalizer = android.media.audiofx.Equalizer(0, audioSessionId)
+                }
+                equalizer?.enabled = true
+                val numBands = equalizer?.numberOfBands ?: 0
+                if (numBands > 0) {
+                    val (b1, b2, b3, b4, b5) = when (presetName) {
+                        "Bass Boost" -> arrayOf(800, 400, 0, -200, -200)
+                        "Vocal Booster" -> arrayOf(-200, 200, 600, 400, 0)
+                        "Rock & Metal" -> arrayOf(600, 200, -200, 400, 600)
+                        "Pop & Beats" -> arrayOf(400, 200, 200, 400, 400)
+                        "Electronic / EDM" -> arrayOf(800, 200, -200, 600, 800)
+                        "Acoustic / Classical" -> arrayOf(300, 200, 300, 400, 500)
+                        "Treble Boost" -> arrayOf(-400, -200, 200, 600, 900)
+                        else -> arrayOf(0, 0, 0, 0, 0)
+                    }
+                    val gains = listOf(b1, b2, b3, b4, b5)
+                    val minLevel = equalizer?.bandLevelRange?.get(0) ?: -1500
+                    val maxLevel = equalizer?.bandLevelRange?.get(1) ?: 1500
+                    for (i in 0 until numBands) {
+                        val rawGain = gains[i % gains.size]
+                        val clamped = rawGain.toShort().coerceIn(minLevel, maxLevel)
+                        equalizer?.setBandLevel(i.toShort(), clamped)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
     }
 
     fun setSleepTimer(minutes: Int?) {
@@ -451,6 +487,10 @@ class AudioPlayerManager(private val context: Context) {
     fun release() {
         progressJob?.cancel()
         sleepTimerJob?.cancel()
+        try {
+            equalizer?.release()
+        } catch (_: Exception) {}
+        equalizer = null
         exoPlayer.removeListener(playerListener)
         exoPlayer.release()
     }

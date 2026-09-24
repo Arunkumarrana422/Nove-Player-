@@ -3,6 +3,7 @@ package com.example
 import android.Manifest
 import android.app.Activity
 import android.app.PictureInPictureParams
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -296,7 +297,9 @@ fun NovaPlayerApp(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val startDestination = if (userSettings.onboardingCompleted) Screen.MainTabs.route else Screen.Onboarding.route
+    val sharedPrefs = remember { context.getSharedPreferences("nova_prefs", Context.MODE_PRIVATE) }
+    val onboardingDone = remember { sharedPrefs.getBoolean("onboarding_completed", false) || userSettings.onboardingCompleted }
+    val startDestination = if (onboardingDone) Screen.MainTabs.route else Screen.Onboarding.route
 
     // Main 4 tabs Pager (Default start at Folders = index 2)
     val pagerState = rememberPagerState(initialPage = 2) { 4 }
@@ -447,6 +450,7 @@ fun NovaPlayerApp(
                 composable(Screen.Onboarding.route) {
                     OnboardingScreen(
                         onGetStarted = {
+                            sharedPrefs.edit().putBoolean("onboarding_completed", true).apply()
                             viewModel.setOnboardingCompleted(true)
                             navController.navigate(Screen.MainTabs.route) {
                                 popUpTo(Screen.Onboarding.route) { inclusive = true }
