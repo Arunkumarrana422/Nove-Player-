@@ -2,6 +2,7 @@ package com.example
 
 import android.Manifest
 import android.app.Activity
+import android.app.NotificationManager
 import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
@@ -121,6 +122,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        try {
+            notificationManager.cancel(1001)
+            notificationManager.cancel(1002)
+        } catch (_: Exception) {}
         try {
             contentResolver.registerContentObserver(
                 android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
@@ -156,9 +162,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        // Stop audio when background audio is disabled
         val bgAudio = viewModel.userSettings.value.backgroundAudioEnabled
-        if (!bgAudio) {
+        if (bgAudio) {
+            if (viewModel.audioPlayerManager.isPlaying.value) {
+                viewModel.audioPlayerManager.updateMediaNotification()
+            }
+            if (viewModel.playerManager.isPlaying.value) {
+                viewModel.playerManager.updateVideoNotification()
+            }
+        } else {
             val isPip = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) isInPictureInPictureMode else false
             if (!isPip) {
                 if (viewModel.playerManager.isPlaying.value) {

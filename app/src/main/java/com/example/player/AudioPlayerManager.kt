@@ -155,25 +155,37 @@ class AudioPlayerManager(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val remoteViews = RemoteViews(context.packageName, com.example.R.layout.notification_media).apply {
-            setTextViewText(com.example.R.id.notif_title, song.title)
-            setTextViewText(com.example.R.id.notif_artist, song.artist)
-            setImageViewResource(
-                com.example.R.id.notif_btn_play_pause,
-                if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+        val playPauseAction = if (isPlaying) {
+            NotificationCompat.Action(
+                android.R.drawable.ic_media_pause,
+                "Pause",
+                createActionPendingIntent("ACTION_PAUSE")
             )
-
-            val currentPos = _currentPositionMs.value
-            val duration = _durationMs.value.takeIf { it > 0 } ?: song.durationMs
-            setTextViewText(com.example.R.id.notif_current_time, Video.formatDuration(currentPos))
-            setTextViewText(com.example.R.id.notif_duration, Video.formatDuration(duration))
-            setProgressBar(com.example.R.id.notif_progress, duration.toInt().coerceAtLeast(1), currentPos.toInt().coerceAtMost(duration.toInt()), false)
-
-            setOnClickPendingIntent(com.example.R.id.notif_btn_prev, createActionPendingIntent("ACTION_PREV"))
-            setOnClickPendingIntent(com.example.R.id.notif_btn_play_pause, createActionPendingIntent(if (isPlaying) "ACTION_PAUSE" else "ACTION_PLAY"))
-            setOnClickPendingIntent(com.example.R.id.notif_btn_next, createActionPendingIntent("ACTION_NEXT"))
-            setOnClickPendingIntent(com.example.R.id.notif_btn_close, createActionPendingIntent("ACTION_STOP"))
+        } else {
+            NotificationCompat.Action(
+                android.R.drawable.ic_media_play,
+                "Play",
+                createActionPendingIntent("ACTION_PLAY")
+            )
         }
+
+        val prevAction = NotificationCompat.Action(
+            android.R.drawable.ic_media_previous,
+            "Previous",
+            createActionPendingIntent("ACTION_PREV")
+        )
+
+        val nextAction = NotificationCompat.Action(
+            android.R.drawable.ic_media_next,
+            "Next",
+            createActionPendingIntent("ACTION_NEXT")
+        )
+
+        val stopAction = NotificationCompat.Action(
+            android.R.drawable.ic_menu_close_clear_cancel,
+            "Close",
+            createActionPendingIntent("ACTION_STOP")
+        )
 
         val notification = NotificationCompat.Builder(context, "media_playback_channel")
             .setSmallIcon(android.R.drawable.ic_media_play)
@@ -184,8 +196,14 @@ class AudioPlayerManager(private val context: Context) {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOngoing(isPlaying)
-            .setCustomContentView(remoteViews)
-            .setCustomBigContentView(remoteViews)
+            .setStyle(
+                androidx.media.app.NotificationCompat.MediaStyle()
+                    .setShowActionsInCompactView(0, 1, 2)
+            )
+            .addAction(prevAction)
+            .addAction(playPauseAction)
+            .addAction(nextAction)
+            .addAction(stopAction)
             .build()
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

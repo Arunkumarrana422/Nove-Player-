@@ -1,7 +1,11 @@
 package com.example.player
 
 import android.app.Activity
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import androidx.core.app.NotificationCompat
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Handler
@@ -31,6 +35,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class NovaPlayerManager(private val context: Context) {
+    companion object {
+        var activeInstance: NovaPlayerManager? = null
+    }
+
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -125,6 +133,7 @@ class NovaPlayerManager(private val context: Context) {
     private var sleepTimerJob: Job? = null
 
     init {
+        activeInstance = this
         val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val curVol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         if (maxVol > 0) {
@@ -185,6 +194,7 @@ class NovaPlayerManager(private val context: Context) {
         exoPlayer.playWhenReady = true
         _isPlaying.value = true
         _isMiniPlayerActive.value = false
+        updateVideoNotification()
     }
 
     fun flushProgress() {
@@ -200,12 +210,14 @@ class NovaPlayerManager(private val context: Context) {
     fun play() {
         exoPlayer.play()
         _isPlaying.value = true
+        updateVideoNotification()
     }
 
     fun pause() {
         flushProgress()
         exoPlayer.pause()
         _isPlaying.value = false
+        updateVideoNotification()
     }
 
     fun stopAndDismiss() {
@@ -219,6 +231,77 @@ class NovaPlayerManager(private val context: Context) {
         _isMiniPlayerActive.value = false
         _currentPositionMs.value = 0L
         _durationMs.value = 0L
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        try {
+            notificationManager.cancel(1002)
+        } catch (_: Exception) {}
+    }
+
+    fun updateVideoNotification() {
+        val video = _currentVideo.value ?: return
+        val isPlaying = _isPlaying.value
+
+        val intent = Intent(context, com.example.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val playPauseAction = if (isPlaying) {
+            NotificationCompat.Action(
+                android.R.drawable.ic_media_pause,
+                "Pause",
+                createVideoActionPendingIntent("VIDEO_PAUSE")
+            )
+        } else {
+            NotificationCompat.Action(
+                android.R.drawable.ic_media_play,
+                "Play",
+                createVideoActionPendingIntent("VIDEO_PLAY")
+            )
+        }
+
+        val stopAction = NotificationCompat.Action(
+            android.R.drawable.ic_menu_close_clear_cancel,
+            "Close",
+            createVideoActionPendingIntent("VIDEO_STOP")
+        )
+
+        val notification = NotificationCompat.Builder(context, "media_playback_channel")
+            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setContentTitle(video.title)
+            .setContentText(video.folderName)
+            .setContentIntent(pendingIntent)
+            .setDeleteIntent(createVideoActionPendingIntent("VIDEO_STOP"))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOngoing(isPlaying)
+            .setStyle(
+                androidx.media.app.NotificationCompat.MediaStyle()
+                    .setShowActionsInCompactView(0, 1)
+            )
+            .addAction(playPauseAction)
+            .addAction(stopAction)
+            .build()
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        try {
+            notificationManager.notify(1002, notification)
+        } catch (_: Exception) {}
+    }
+
+    private fun createVideoActionPendingIntent(action: String): PendingIntent {
+        val intent = Intent(context, MediaActionReceiver::class.java).apply {
+            this.action = action
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            action.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     fun togglePlayPause() {
