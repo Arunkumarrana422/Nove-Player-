@@ -68,7 +68,7 @@ fun OnboardingScreen(
                     .size(80.dp)
                     .background(
                         Brush.linearGradient(listOf(NovaPrimary, NovaSecondary, NovaAccent)),
-                        RoundedCornerShape(20.dp)
+                        CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {

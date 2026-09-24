@@ -66,9 +66,9 @@ fun GestureOverlayIndicator(
     ) {
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xCC0B1020))
-                .padding(horizontal = 20.dp, vertical = 14.dp),
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xEE0B1020))
+                .padding(horizontal = 16.dp, vertical = 6.dp),
             contentAlignment = Alignment.Center
         ) {
             when (hudState) {

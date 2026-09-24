@@ -412,7 +412,7 @@ fun PlayerScreen(
                                 totalDragY += dragAmount.y
 
                                 val totalMoveSq = totalDragX * totalDragX + totalDragY * totalDragY
-                                if (totalMoveSq > 400f) {
+                                if (totalMoveSq > 3600f) {
                                     if (isLongPressActive) {
                                         isLongPressActive = false
                                         playerManager.setSpeed(originalSpeed)
@@ -424,7 +424,7 @@ fun PlayerScreen(
                                     }
                                 } else {
                                     val duration = System.currentTimeMillis() - startTime
-                                    if (!isLongPressActive && !isDragging && duration > 400) {
+                                    if (!isLongPressActive && !isDragging && duration > 100) {
                                         isLongPressActive = true
                                         originalSpeed = playbackSpeed
                                         playerManager.setSpeed(2.0f)
@@ -458,10 +458,10 @@ fun PlayerScreen(
                 }
         )
 
-        // Center HUD Overlay
+        // Top Toast HUD Overlay
         GestureOverlayIndicator(
             hudState = hudState,
-            modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 36.dp)
         )
 
         // Error Banner
