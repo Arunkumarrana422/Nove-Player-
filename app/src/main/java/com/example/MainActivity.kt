@@ -691,6 +691,8 @@ fun NovaPlayerApp(
                     PlayerScreen(
                         playerManager = viewModel.playerManager,
                         settings = userSettings,
+                        onFontSizeChange = { viewModel.setSubtitleFontSize(it) },
+                        onColorChange = { text, bg -> viewModel.setSubtitleColors(text, bg) },
                         onBack = { navController.popBackStack() },
                         onEnterPiP = onEnterPiP
                     )

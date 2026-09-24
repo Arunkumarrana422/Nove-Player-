@@ -417,11 +417,13 @@ class NovaPlayerManager(private val context: Context) {
 
     fun selectAudioTrack(track: AudioTrack) {
         val tracks = exoPlayer.currentTracks
-        for (trackGroup in tracks.groups) {
+        for (groupIndex in 0 until tracks.groups.size) {
+            val trackGroup = tracks.groups[groupIndex]
             if (trackGroup.type == C.TRACK_TYPE_AUDIO) {
                 for (i in 0 until trackGroup.length) {
+                    val trackId = "audio_${groupIndex}_$i"
                     val format = trackGroup.getTrackFormat(i)
-                    if (format.id == track.id || format.language == track.language) {
+                    if (trackId == track.id || format.id == track.id || (format.language == track.language && track.id.contains("_$i"))) {
                         trackSelector.setParameters(
                             trackSelector.buildUponParameters()
                                 .setOverrideForType(
@@ -499,14 +501,16 @@ class NovaPlayerManager(private val context: Context) {
         val audioList = mutableListOf<AudioTrack>()
         val subList = mutableListOf<SubtitleTrack>()
 
-        for (group in tracks.groups) {
+        for (groupIndex in 0 until tracks.groups.size) {
+            val group = tracks.groups[groupIndex]
             if (group.type == C.TRACK_TYPE_AUDIO) {
                 for (i in 0 until group.length) {
                     val format = group.getTrackFormat(i)
                     val label = format.label ?: format.language ?: "Audio Track ${audioList.size + 1}"
+                    val trackId = "audio_${groupIndex}_$i"
                     audioList.add(
                         AudioTrack(
-                            id = format.id ?: "$i",
+                            id = trackId,
                             label = "$label (${format.sampleMimeType ?: "Audio"})",
                             language = format.language ?: "und",
                             isSelected = group.isTrackSelected(i)
@@ -517,9 +521,10 @@ class NovaPlayerManager(private val context: Context) {
                 for (i in 0 until group.length) {
                     val format = group.getTrackFormat(i)
                     val label = format.label ?: format.language ?: "Subtitle ${subList.size + 1}"
+                    val trackId = "sub_${groupIndex}_$i"
                     subList.add(
                         SubtitleTrack(
-                            id = format.id ?: "$i",
+                            id = trackId,
                             language = format.language ?: "und",
                             label = "$label (${format.language ?: "Text"})",
                             isSelected = group.isTrackSelected(i)

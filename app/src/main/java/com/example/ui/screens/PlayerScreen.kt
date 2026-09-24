@@ -68,6 +68,8 @@ import kotlinx.coroutines.launch
 fun PlayerScreen(
     playerManager: NovaPlayerManager,
     settings: UserSettings,
+    onFontSizeChange: (Int) -> Unit,
+    onColorChange: (String, String) -> Unit,
     onBack: () -> Unit,
     onEnterPiP: () -> Unit
 ) {
@@ -557,8 +559,8 @@ fun PlayerScreen(
                 scope.launch { playerManager.loadExternalSubtitle(uri) }
             },
             onAdjustDelay = { delta -> playerManager.adjustSubtitleDelay(delta) },
-            onFontSizeChange = { /* Updated through MainViewModel in real-time */ },
-            onColorChange = { _, _ -> },
+            onFontSizeChange = { onFontSizeChange(it) },
+            onColorChange = { text, bg -> onColorChange(text, bg) },
             onDismiss = { showSubtitleSheet = false }
         )
     }
