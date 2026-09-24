@@ -58,18 +58,23 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlin.math.absoluteValue
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -219,50 +224,111 @@ fun FullMusicPlayerBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Center Vinyl Disc Album Artwork
-            Box(
-                modifier = Modifier
-                    .size(260.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF11141E)),
-                contentAlignment = Alignment.Center
+            val pagerState = rememberPagerState(
+                initialPage = queueIndex.coerceIn(0, (queue.size - 1).coerceAtLeast(0))
             ) {
-                // Outer Vinyl grooves
+                queue.size.coerceAtLeast(1)
+            }
+
+            LaunchedEffect(queueIndex) {
+                if (queueIndex >= 0 && queueIndex < queue.size && pagerState.currentPage != queueIndex) {
+                    pagerState.animateScrollToPage(queueIndex)
+                }
+            }
+
+            LaunchedEffect(pagerState.currentPage) {
+                if (queue.isNotEmpty() && pagerState.currentPage != queueIndex && pagerState.currentPage < queue.size) {
+                    val targetSong = queue[pagerState.currentPage]
+                    if (targetSong.id != song.id) {
+                        audioPlayerManager.playSong(targetSong, queue, pagerState.currentPage)
+                    }
+                }
+            }
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
+            ) { page ->
+                val pagerSong = queue.getOrNull(page) ?: song
                 Box(
                     modifier = Modifier
-                        .size(250.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF1C2230))
-                        .rotate(if (isPlaying) spinAngle else 0f),
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Album Art Center Disc
-                    Box(
+                    Card(
                         modifier = Modifier
-                            .size(170.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    listOf(NovaPrimary, NovaSecondary, Color(0xFF0F172A))
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                                scaleX = 1f - (pageOffset.absoluteValue * 0.1f).coerceIn(0f, 0.15f)
+                                scaleY = 1f - (pageOffset.absoluteValue * 0.1f).coerceIn(0f, 0.15f)
+                                alpha = 1f - (pageOffset.absoluteValue * 0.3f).coerceIn(0f, 0.5f)
+                            },
+                        shape = RoundedCornerShape(24.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.9f),
-                            modifier = Modifier.size(64.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            NovaPrimary.copy(alpha = 0.85f),
+                                            NovaSecondary.copy(alpha = 0.95f),
+                                            Color(0xFF0F172A)
+                                        )
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(24.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MusicNote,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(52.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Text(
+                                    text = pagerSong.title,
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 20.sp,
+                                        color = Color.White
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "${pagerSong.artist} • ${pagerSong.album}",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = Color.White.copy(alpha = 0.8f)
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
-
-                    // Spindle hole
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface)
-                    )
                 }
             }
 

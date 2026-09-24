@@ -380,12 +380,7 @@ fun NovaPlayerApp(
                         )
                     }
 
-                    val isDark = isSystemInDarkTheme() || userSettings.theme == ThemePreference.DARK
-                    val indicatorColor = if (isDark) {
-                        NovaPrimary.copy(alpha = 0.22f)
-                    } else {
-                        NovaPrimary.copy(alpha = 0.14f)
-                    }
+                    val indicatorColor = NovaAccent.copy(alpha = 0.2f)
 
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surface,
@@ -423,8 +418,8 @@ fun NovaPlayerApp(
                                 },
                                 label = { Text(item.title) },
                                 colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = if (isDark) NovaAccent else NovaPrimary,
-                                    selectedTextColor = if (isDark) NovaAccent else NovaPrimary,
+                                    selectedIconColor = NovaAccent,
+                                    selectedTextColor = NovaAccent,
                                     indicatorColor = indicatorColor,
                                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)

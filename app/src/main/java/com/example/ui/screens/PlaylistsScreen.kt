@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
@@ -125,7 +126,7 @@ fun PlaylistsScreen(
                 ) {
                     Button(
                         onClick = { onPlayVideo(playlistVideos.first(), playlistVideos) },
-                        colors = ButtonDefaults.buttonColors(containerColor = NovaPrimary),
+                        colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f)
                     ) {
@@ -173,23 +174,38 @@ fun PlaylistsScreen(
             }
         }
     } else {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .testTag("playlists_screen")
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Button(
+                    onClick = onCreatePlaylistClick,
+                    modifier = Modifier.fillMaxWidth().testTag("create_playlist_btn"),
+                    colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.PlaylistAdd, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Create New Playlist", fontWeight = FontWeight.Bold)
+                }
+            }
+
             if (playlists.isEmpty()) {
                 EmptyStateView(
                     icon = Icons.Default.PlaylistPlay,
                     title = "No Playlists Yet",
-                    description = "Create custom playlists to organize your favorite movies, clips, and series.",
-                    actionButtonText = "Create Playlist",
-                    onActionClick = onCreatePlaylistClick
+                    description = "Create custom playlists to organize your favorite movies, clips, and series."
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 100.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(playlists, key = { it.id }) { playlist ->
@@ -200,19 +216,6 @@ fun PlaylistsScreen(
                         )
                     }
                 }
-            }
-
-            FloatingActionButton(
-                onClick = onCreatePlaylistClick,
-                containerColor = NovaPrimary,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 80.dp)
-                    .testTag("create_playlist_fab")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Create Playlist")
             }
         }
     }

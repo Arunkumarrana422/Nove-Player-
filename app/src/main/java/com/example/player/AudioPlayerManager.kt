@@ -132,6 +132,26 @@ class AudioPlayerManager(private val context: Context) {
     fun playSong(song: Song, playlist: List<Song> = emptyList(), startIndex: Int = -1) {
         onAudioStarted?.invoke()
         _errorMessage.value = null
+
+        val currentId = _currentSong.value?.id
+        if (currentId == song.id && exoPlayer.playbackState != Player.STATE_IDLE) {
+            val actualQueue = if (playlist.isNotEmpty()) playlist else _queue.value
+            if (actualQueue.isNotEmpty()) {
+                _queue.value = actualQueue
+                val index = if (startIndex >= 0 && startIndex < actualQueue.size) {
+                    startIndex
+                } else {
+                    actualQueue.indexOfFirst { it.id == song.id }.coerceAtLeast(_queueIndex.value)
+                }
+                _queueIndex.value = index
+            }
+            if (!exoPlayer.isPlaying) {
+                exoPlayer.play()
+                _isPlaying.value = true
+            }
+            return
+        }
+
         _currentSong.value = song
 
         val actualQueue = if (playlist.isNotEmpty()) playlist else listOf(song)
