@@ -4,6 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.media.AudioManager
 import android.net.Uri
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -22,6 +28,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class AudioPlayerManager(private val context: Context) {
+    companion object {
+        var activeInstance: AudioPlayerManager? = null
+    }
+
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -111,7 +121,104 @@ class AudioPlayerManager(private val context: Context) {
     }
 
     init {
+        activeInstance = this
+        createNotificationChannel()
         startProgressTracker()
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "media_playback_channel",
+                "Media Playback",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Controls for music and audio playback"
+                setShowBadge(false)
+            }
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    fun updateMediaNotification() {
+        val song = _currentSong.value ?: return
+        val isPlaying = _isPlaying.value
+
+        val intent = Intent(context, com.example.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val playPauseAction = if (isPlaying) {
+            NotificationCompat.Action(
+                android.R.drawable.ic_media_pause,
+                "Pause",
+                createActionPendingIntent("ACTION_PAUSE")
+            )
+        } else {
+            NotificationCompat.Action(
+                android.R.drawable.ic_media_play,
+                "Play",
+                createActionPendingIntent("ACTION_PLAY")
+            )
+        }
+
+        val prevAction = NotificationCompat.Action(
+            android.R.drawable.ic_media_previous,
+            "Previous",
+            createActionPendingIntent("ACTION_PREV")
+        )
+
+        val nextAction = NotificationCompat.Action(
+            android.R.drawable.ic_media_next,
+            "Next",
+            createActionPendingIntent("ACTION_NEXT")
+        )
+
+        val stopAction = NotificationCompat.Action(
+            android.R.drawable.ic_menu_close_clear_cancel,
+            "Close",
+            createActionPendingIntent("ACTION_STOP")
+        )
+
+        val notification = NotificationCompat.Builder(context, "media_playback_channel")
+            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setContentTitle(song.title)
+            .setContentText(song.artist)
+            .setContentIntent(pendingIntent)
+            .setDeleteIntent(createActionPendingIntent("ACTION_STOP"))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(isPlaying)
+            .setStyle(
+                androidx.media.app.NotificationCompat.MediaStyle()
+                    .setShowActionsInCompactView(0, 1, 2)
+            )
+            .addAction(prevAction)
+            .addAction(playPauseAction)
+            .addAction(nextAction)
+            .addAction(stopAction)
+            .build()
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        try {
+            notificationManager.notify(1001, notification)
+        } catch (_: Exception) {}
+    }
+
+    private fun createActionPendingIntent(action: String): PendingIntent {
+        val intent = Intent(context, MediaActionReceiver::class.java).apply {
+            this.action = action
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            action.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     private fun startProgressTracker() {
@@ -153,6 +260,7 @@ class AudioPlayerManager(private val context: Context) {
             if (!exoPlayer.isPlaying) {
                 exoPlayer.play()
                 _isPlaying.value = true
+                updateMediaNotification()
             }
             return
         }
@@ -176,6 +284,7 @@ class AudioPlayerManager(private val context: Context) {
             _isPlaying.value = true
             _durationMs.value = song.durationMs
             _currentPositionMs.value = 0L
+            updateMediaNotification()
         } catch (e: Exception) {
             _errorMessage.value = "Failed to load track: ${e.localizedMessage}"
         }
@@ -185,11 +294,13 @@ class AudioPlayerManager(private val context: Context) {
         onAudioStarted?.invoke()
         exoPlayer.play()
         _isPlaying.value = true
+        updateMediaNotification()
     }
 
     fun pause() {
         exoPlayer.pause()
         _isPlaying.value = false
+        updateMediaNotification()
     }
 
     fun togglePlayPause() {
@@ -292,6 +403,8 @@ class AudioPlayerManager(private val context: Context) {
         try {
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(1001)
         } catch (_: Exception) {}
         _currentSong.value = null
         _isPlaying.value = false
