@@ -198,8 +198,8 @@ class MusicRepository(private val context: Context) {
         val finalSongs = if (songsList.isNotEmpty()) {
             songsList
         } else {
-            // Provide sample tracks if no local mp3 found on device/emulator
-            sampleSongs
+            val favs = _favoriteSongIds.value
+            sampleSongs.map { it.copy(isFavorite = favs.contains(it.id)) }
         }
 
         _allSongs.value = finalSongs

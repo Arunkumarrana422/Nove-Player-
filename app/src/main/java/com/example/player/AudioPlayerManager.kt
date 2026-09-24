@@ -99,6 +99,11 @@ class AudioPlayerManager(private val context: Context) {
 
     fun toggleFavorite(song: Song) {
         onToggleFavorite?.invoke(song)
+        val updatedSong = song.copy(isFavorite = !song.isFavorite)
+        if (_currentSong.value?.id == song.id) {
+            _currentSong.value = updatedSong
+        }
+        _queue.value = _queue.value.map { if (it.id == song.id) updatedSong else it }
     }
 
     fun playNext() {

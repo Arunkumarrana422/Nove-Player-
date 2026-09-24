@@ -219,9 +219,8 @@ private fun QuickActionButton(
     modifier: Modifier = Modifier
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
             .testTag("quick_action_$label"),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -326,9 +325,9 @@ private fun ContinueWatchingCard(
     }
 
     Card(
+        onClick = onClick,
         modifier = Modifier
             .width(210.dp)
-            .clickable(onClick = onClick)
             .testTag("continue_card_${video.id}"),
         shape = RoundedCornerShape(12.dp),
         border = if (isCurrentlyPlaying) androidx.compose.foundation.BorderStroke(1.5.dp, NovaAccent) else null,

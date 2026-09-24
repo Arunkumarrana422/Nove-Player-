@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -75,8 +76,8 @@ fun MiniAudioPlayerBar(
         durationMs = durationMs,
         onExpandFullPlayer = onExpand,
         onTogglePlayPause = { audioPlayerManager.togglePlayPause() },
+        onPrevious = { audioPlayerManager.previousSong() },
         onNext = { audioPlayerManager.playNext() },
-        onToggleFavorite = { audioPlayerManager.toggleFavorite(it) },
         onClose = { audioPlayerManager.stopAndDismiss() },
         modifier = modifier
     )
@@ -90,8 +91,8 @@ fun MiniAudioPlayerBar(
     durationMs: Long,
     onExpandFullPlayer: () -> Unit,
     onTogglePlayPause: () -> Unit,
+    onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onToggleFavorite: (Song) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -194,15 +195,15 @@ fun MiniAudioPlayerBar(
                             }
                         }
 
-                        // Favorite button
+                        // Previous track button
                         IconButton(
-                            onClick = { onToggleFavorite(song) },
+                            onClick = onPrevious,
                             modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
-                                imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Favorite",
-                                tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                imageVector = Icons.Default.SkipPrevious,
+                                contentDescription = "Previous Track",
+                                tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(20.dp)
                             )
                         }

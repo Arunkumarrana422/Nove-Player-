@@ -348,15 +348,6 @@ fun FullMusicPlayerBottomSheet(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-
-                IconButton(onClick = { onToggleFavorite(song) }) {
-                    Icon(
-                        imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favorite",
-                        tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
             }
 
             // Sound Wave Visualizer

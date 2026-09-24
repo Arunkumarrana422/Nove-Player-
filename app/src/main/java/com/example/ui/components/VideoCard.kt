@@ -447,9 +447,9 @@ fun VideoGridCard(
     }
 
     Card(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .testTag("video_grid_card_${video.id}"),
         shape = RoundedCornerShape(12.dp),
         border = if (isCurrentlyPlaying) BorderStroke(1.5.dp, NovaAccent) else null,
