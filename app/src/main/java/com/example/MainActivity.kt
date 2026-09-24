@@ -302,7 +302,7 @@ fun NovaPlayerApp(
 
     val isPlayerScreen = currentRoute == Screen.Player.route
     val isMainTabs = currentRoute == Screen.MainTabs.route || currentRoute == null
-    val showBottomBar = isMainTabs || currentRoute == Screen.Music.route
+    val showBottomBar = isMainTabs
     val showTopBar = isMainTabs
 
     val isAtMainRoot = isMainTabs && selectedFolder == null && selectedPlaylist == null

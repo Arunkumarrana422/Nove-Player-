@@ -181,8 +181,9 @@ fun MusicScreen(
         }.sortedByDescending { it.songCount }
     }
 
-    // Handle Sub-screen Detail Views
+    // Handle Sub-screen Detail Views with BackHandler for phone hardware back button
     if (selectedFolder != null) {
+        androidx.activity.compose.BackHandler { selectedFolder = null }
         FolderDetailScreen(
             folder = selectedFolder!!,
             currentPlayingSongId = currentPlayingSongId,
@@ -196,6 +197,7 @@ fun MusicScreen(
     }
 
     if (selectedAlbum != null) {
+        androidx.activity.compose.BackHandler { selectedAlbum = null }
         AlbumDetailScreen(
             album = selectedAlbum!!,
             currentPlayingSongId = currentPlayingSongId,
@@ -209,6 +211,7 @@ fun MusicScreen(
     }
 
     if (selectedArtist != null) {
+        androidx.activity.compose.BackHandler { selectedArtist = null }
         ArtistDetailScreen(
             artist = selectedArtist!!,
             currentPlayingSongId = currentPlayingSongId,
@@ -222,6 +225,7 @@ fun MusicScreen(
     }
 
     if (selectedPlaylist != null) {
+        androidx.activity.compose.BackHandler { selectedPlaylist = null }
         PlaylistDetailScreen(
             playlist = selectedPlaylist!!,
             currentPlayingSongId = currentPlayingSongId,
@@ -463,6 +467,9 @@ fun MusicScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(albums, key = { it.name }) { album ->
+                                val albumArtUri = remember(album.id) {
+                                    ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), album.id)
+                                }
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -482,11 +489,17 @@ fun MusicScreen(
                                                 ),
                                             contentAlignment = Alignment.Center
                                         ) {
+                                            AsyncImage(
+                                                model = albumArtUri,
+                                                contentDescription = null,
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                            )
                                             Icon(
                                                 imageVector = Icons.Default.Album,
                                                 contentDescription = null,
-                                                tint = Color.White.copy(alpha = 0.8f),
-                                                modifier = Modifier.size(48.dp)
+                                                tint = Color.White.copy(alpha = 0.4f),
+                                                modifier = Modifier.size(36.dp)
                                             )
                                         }
                                         Spacer(modifier = Modifier.height(8.dp))
