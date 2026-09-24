@@ -72,6 +72,7 @@ fun HomeScreen(
     allVideosCount: Int,
     currentPlayingVideoId: String? = null,
     isPlaying: Boolean = false,
+    currentPosMs: Long = 0L,
     onPlayVideo: (Video, List<Video>) -> Unit,
     onNavigateToMusic: () -> Unit,
     onNavigateToVideos: () -> Unit,
@@ -148,6 +149,7 @@ fun HomeScreen(
                         ContinueWatchingCard(
                             video = video,
                             isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
+                            currentPosMs = currentPosMs,
                             onClick = { onPlayVideo(video, continueWatching) }
                         )
                     }
@@ -172,6 +174,7 @@ fun HomeScreen(
                         video = video,
                         onClick = { onPlayVideo(video, recentVideos) },
                         isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
+                        currentPosMs = currentPosMs,
                         onToggleFavorite = { onToggleFavorite(video) },
                         onAddToPlaylist = { onAddToPlaylist(video) },
                         onShowInfo = { onShowVideoInfo(video) },
@@ -311,6 +314,7 @@ private fun SectionHeader(
 private fun ContinueWatchingCard(
     video: Video,
     isCurrentlyPlaying: Boolean = false,
+    currentPosMs: Long = 0L,
     onClick: () -> Unit
 ) {
     val isPartiallyWatched = video.isPartiallyWatched || (video.lastPositionMs > 5000L && video.progressFraction in 0.02f..0.95f)
@@ -389,15 +393,19 @@ private fun ContinueWatchingCard(
                     }
                 }
 
-                LinearProgressIndicator(
-                    progress = { video.progressFraction },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(3.5.dp)
-                        .align(Alignment.BottomCenter),
-                    color = if (isPartiallyWatched) halfWatchedColor else NovaAccent,
-                    trackColor = Color(0x55FFFFFF)
-                )
+                val activePos = if (isCurrentlyPlaying) currentPosMs else video.lastPositionMs
+                val activeFraction = if (video.durationMs > 0) (activePos.toFloat() / video.durationMs.toFloat()).coerceIn(0f, 1f) else video.progressFraction
+                if (activePos > 0 || isCurrentlyPlaying) {
+                    LinearProgressIndicator(
+                        progress = { activeFraction },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.5.dp)
+                            .align(Alignment.BottomCenter),
+                        color = NovaAccent,
+                        trackColor = Color(0x55FFFFFF)
+                    )
+                }
             }
 
             Column(modifier = Modifier.padding(10.dp)) {
