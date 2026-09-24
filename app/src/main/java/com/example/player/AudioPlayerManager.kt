@@ -202,6 +202,7 @@ class AudioPlayerManager(private val context: Context) {
             .addAction(playPauseAction)
             .addAction(nextAction)
             .addAction(stopAction)
+            .setDeleteIntent(createActionPendingIntent("ACTION_DISMISS"))
             .build()
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

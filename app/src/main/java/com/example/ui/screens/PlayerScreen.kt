@@ -297,6 +297,8 @@ fun PlayerScreen(
                         var isDragHorizontal = false
                         var totalDragX = 0f
                         var totalDragY = 0f
+                        var isLongPressActive = false
+                        var originalSpeed = 1f
                         val isLeft = startPos.x < size.width / 2
 
                         var previousCentroid = Offset.Zero
@@ -308,7 +310,11 @@ fun PlayerScreen(
 
                             if (activePointers.isEmpty()) {
                                 // All fingers lifted
-                                if (isMultiTouch) {
+                                if (isLongPressActive) {
+                                    isLongPressActive = false
+                                    playerManager.setSpeed(originalSpeed)
+                                    hudState = GestureHudState.None
+                                } else if (isMultiTouch) {
                                     if (zoomScale <= 1.05f) {
                                         zoomScale = 1f
                                         panOffsetX = 0f
@@ -363,6 +369,11 @@ fun PlayerScreen(
                             }
 
                             if (activePointers.size >= 2) {
+                                if (isLongPressActive) {
+                                    isLongPressActive = false
+                                    playerManager.setSpeed(originalSpeed)
+                                    hudState = GestureHudState.None
+                                }
                                 // 2-FINGER PINCH TO ZOOM & PAN
                                 isMultiTouch = true
                                 val p1 = activePointers[0].position
@@ -394,16 +405,31 @@ fun PlayerScreen(
                                 event.changes.forEach { it.consume() }
 
                             } else if (activePointers.size == 1 && !isMultiTouch && settings.gesturesEnabled) {
-                                // 1-FINGER SWIPE / DRAG
+                                // 1-FINGER SWIPE / DRAG / LONG PRESS
                                 val change = activePointers[0]
                                 val dragAmount = change.positionChange()
                                 totalDragX += dragAmount.x
                                 totalDragY += dragAmount.y
 
                                 val totalMoveSq = totalDragX * totalDragX + totalDragY * totalDragY
-                                if (totalMoveSq > 400f && !isDragging) {
-                                    isDragging = true
-                                    isDragHorizontal = kotlin.math.abs(totalDragX) > kotlin.math.abs(totalDragY)
+                                if (totalMoveSq > 400f) {
+                                    if (isLongPressActive) {
+                                        isLongPressActive = false
+                                        playerManager.setSpeed(originalSpeed)
+                                        hudState = GestureHudState.None
+                                    }
+                                    if (!isDragging) {
+                                        isDragging = true
+                                        isDragHorizontal = kotlin.math.abs(totalDragX) > kotlin.math.abs(totalDragY)
+                                    }
+                                } else {
+                                    val duration = System.currentTimeMillis() - startTime
+                                    if (!isLongPressActive && !isDragging && duration > 400) {
+                                        isLongPressActive = true
+                                        originalSpeed = playbackSpeed
+                                        playerManager.setSpeed(2.0f)
+                                        hudState = GestureHudState.SpeedBoost(2.0f)
+                                    }
                                 }
 
                                 if (isDragging) {

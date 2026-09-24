@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
@@ -73,7 +74,7 @@ fun FolderCard(
                         Brush.linearGradient(
                             if (isCurrentlyPlaying) listOf(NovaPrimary, NovaAccent) else listOf(NovaPrimary.copy(alpha = 0.8f), NovaSecondary.copy(alpha = 0.8f))
                         ),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -167,7 +168,7 @@ fun PlaylistCard(
                     .size(54.dp)
                     .background(
                         Brush.linearGradient(listOf(NovaSecondary, NovaAccent)),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {

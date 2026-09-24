@@ -282,6 +282,7 @@ class NovaPlayerManager(private val context: Context) {
             )
             .addAction(playPauseAction)
             .addAction(stopAction)
+            .setDeleteIntent(createVideoActionPendingIntent("VIDEO_DISMISS"))
             .build()
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
