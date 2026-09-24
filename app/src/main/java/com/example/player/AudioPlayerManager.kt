@@ -14,9 +14,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import android.widget.RemoteViews
 import com.example.domain.model.AudioRepeatMode
 import com.example.domain.model.EqualizerPreset
 import com.example.domain.model.Song
+import com.example.domain.model.Video
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -153,54 +155,34 @@ class AudioPlayerManager(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val playPauseAction = if (isPlaying) {
-            NotificationCompat.Action(
-                android.R.drawable.ic_media_pause,
-                "Pause",
-                createActionPendingIntent("ACTION_PAUSE")
+        val remoteViews = RemoteViews(context.packageName, com.example.R.layout.notification_media).apply {
+            setTextViewText(com.example.R.id.notif_title, song.title)
+            setTextViewText(com.example.R.id.notif_artist, song.artist)
+            setImageViewResource(
+                com.example.R.id.notif_btn_play_pause,
+                if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
             )
-        } else {
-            NotificationCompat.Action(
-                android.R.drawable.ic_media_play,
-                "Play",
-                createActionPendingIntent("ACTION_PLAY")
-            )
+
+            val currentPos = _currentPositionMs.value
+            val duration = _durationMs.value.takeIf { it > 0 } ?: song.durationMs
+            setTextViewText(com.example.R.id.notif_current_time, Video.formatDuration(currentPos))
+            setTextViewText(com.example.R.id.notif_duration, Video.formatDuration(duration))
+            setProgressBar(com.example.R.id.notif_progress, duration.toInt().coerceAtLeast(1), currentPos.toInt().coerceAtMost(duration.toInt()), false)
+
+            setOnClickPendingIntent(com.example.R.id.notif_btn_prev, createActionPendingIntent("ACTION_PREV"))
+            setOnClickPendingIntent(com.example.R.id.notif_btn_play_pause, createActionPendingIntent(if (isPlaying) "ACTION_PAUSE" else "ACTION_PLAY"))
+            setOnClickPendingIntent(com.example.R.id.notif_btn_next, createActionPendingIntent("ACTION_NEXT"))
+            setOnClickPendingIntent(com.example.R.id.notif_btn_close, createActionPendingIntent("ACTION_STOP"))
         }
-
-        val prevAction = NotificationCompat.Action(
-            android.R.drawable.ic_media_previous,
-            "Previous",
-            createActionPendingIntent("ACTION_PREV")
-        )
-
-        val nextAction = NotificationCompat.Action(
-            android.R.drawable.ic_media_next,
-            "Next",
-            createActionPendingIntent("ACTION_NEXT")
-        )
-
-        val stopAction = NotificationCompat.Action(
-            android.R.drawable.ic_menu_close_clear_cancel,
-            "Close",
-            createActionPendingIntent("ACTION_STOP")
-        )
 
         val notification = NotificationCompat.Builder(context, "media_playback_channel")
             .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentTitle(song.title)
-            .setContentText(song.artist)
             .setContentIntent(pendingIntent)
             .setDeleteIntent(createActionPendingIntent("ACTION_STOP"))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(isPlaying)
-            .setStyle(
-                androidx.media.app.NotificationCompat.MediaStyle()
-                    .setShowActionsInCompactView(0, 1, 2)
-            )
-            .addAction(prevAction)
-            .addAction(playPauseAction)
-            .addAction(nextAction)
-            .addAction(stopAction)
+            .setCustomContentView(remoteViews)
+            .setCustomBigContentView(remoteViews)
             .build()
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
