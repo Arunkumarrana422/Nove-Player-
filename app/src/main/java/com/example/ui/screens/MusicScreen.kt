@@ -107,6 +107,7 @@ fun MusicScreen(
     onToggleFavorite: (Song) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
     onCreatePlaylist: (String) -> Unit,
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -268,11 +269,19 @@ fun MusicScreen(
                     modifier = Modifier.weight(1f).height(50.dp)
                 )
             } else {
-                Text(
-                    text = "${filteredSongs.size} Songs",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text(
+                        text = "${filteredSongs.size} Songs",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { isSearchActive = true }) {
@@ -949,10 +958,9 @@ fun SongItemCard(
     }
 
     Card(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
             .testTag("song_item_${song.id}"),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(

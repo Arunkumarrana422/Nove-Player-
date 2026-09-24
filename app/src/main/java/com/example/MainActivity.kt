@@ -297,12 +297,12 @@ fun NovaPlayerApp(
 
     val startDestination = if (userSettings.onboardingCompleted) Screen.MainTabs.route else Screen.Onboarding.route
 
-    // Main 5 tabs Pager (Default start at Folders = index 2)
-    val pagerState = rememberPagerState(initialPage = 2) { BottomNavItems.size }
+    // Main 4 tabs Pager (Default start at Folders = index 2)
+    val pagerState = rememberPagerState(initialPage = 2) { 4 }
 
     val isPlayerScreen = currentRoute == Screen.Player.route
     val isMainTabs = currentRoute == Screen.MainTabs.route || currentRoute == null
-    val showBottomBar = isMainTabs
+    val showBottomBar = isMainTabs || currentRoute == Screen.Music.route
     val showTopBar = isMainTabs
 
     val isAtMainRoot = isMainTabs && selectedFolder == null && selectedPlaylist == null
@@ -395,17 +395,26 @@ fun NovaPlayerApp(
                         modifier = Modifier.testTag("bottom_navigation_bar")
                     ) {
                         BottomNavItems.forEachIndexed { index, item ->
-                            val selected = pagerState.currentPage == index
+                            val selected = if (item.route == Screen.Music.route) currentRoute == Screen.Music.route else (pagerState.currentPage == index && currentRoute == Screen.MainTabs.route)
                             NavigationBarItem(
                                 selected = selected,
                                 onClick = {
-                                    if (item.route == Screen.Folders.route) {
-                                        viewModel.selectFolder(null)
-                                    } else if (item.route == Screen.Playlists.route) {
-                                        viewModel.selectPlaylist(null)
-                                    }
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(index)
+                                    if (item.route == Screen.Music.route) {
+                                        navController.navigate(Screen.Music.route) {
+                                            launchSingleTop = true
+                                        }
+                                    } else {
+                                        if (item.route == Screen.Folders.route) {
+                                            viewModel.selectFolder(null)
+                                        } else if (item.route == Screen.Playlists.route) {
+                                            viewModel.selectPlaylist(null)
+                                        }
+                                        if (currentRoute != Screen.MainTabs.route) {
+                                            navController.popBackStack(Screen.MainTabs.route, false)
+                                        }
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(index)
+                                        }
                                     }
                                 },
                                 icon = {
@@ -549,29 +558,34 @@ fun NovaPlayerApp(
                                 onShowVideoInfo = { infoVideo = it }
                             )
 
-                            4 -> MusicScreen(
-                                songs = allSongs,
-                                playlists = audioPlaylists,
-                                currentPlayingSongId = currentSongPlaying?.id,
-                                isPlaying = isAudioPlaying,
-                                onPlaySong = { song, queue ->
-                                    viewModel.audioPlayerManager.playSong(song, queue)
-                                },
-                                onToggleFavorite = { viewModel.toggleFavoriteSong(it) },
-                                onAddToPlaylist = { song ->
-                                    if (audioPlaylists.isNotEmpty()) {
-                                        viewModel.addSongToAudioPlaylist(audioPlaylists.first().id, song)
-                                        Toast.makeText(context, "Added to playlist", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        viewModel.createAudioPlaylist("My Music Playlist")
-                                    }
-                                },
-                                onCreatePlaylist = { name ->
-                                    viewModel.createAudioPlaylist(name)
-                                }
-                            )
+
                         }
                     }
+                }
+
+                composable(Screen.Music.route) {
+                    MusicScreen(
+                        songs = allSongs,
+                        playlists = audioPlaylists,
+                        currentPlayingSongId = currentSongPlaying?.id,
+                        isPlaying = isAudioPlaying,
+                        onPlaySong = { song, queue ->
+                            viewModel.audioPlayerManager.playSong(song, queue)
+                        },
+                        onToggleFavorite = { viewModel.toggleFavoriteSong(it) },
+                        onAddToPlaylist = { song ->
+                            if (audioPlaylists.isNotEmpty()) {
+                                viewModel.addSongToAudioPlaylist(audioPlaylists.first().id, song)
+                                Toast.makeText(context, "Added to playlist", Toast.LENGTH_SHORT).show()
+                            } else {
+                                viewModel.createAudioPlaylist("My Music Playlist")
+                            }
+                        },
+                        onCreatePlaylist = { name ->
+                            viewModel.createAudioPlaylist(name)
+                        },
+                        onBack = { navController.popBackStack() }
+                    )
                 }
 
                 composable(Screen.Favorites.route) {
