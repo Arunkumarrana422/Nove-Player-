@@ -153,7 +153,7 @@ fun VideoCard(
         colors = CardDefaults.cardColors(
             containerColor = if (isCurrentlyPlaying) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f) else MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentlyPlaying) 4.dp else 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentlyPlaying) 6.dp else 4.dp)
     ) {
         Row(
             modifier = Modifier
@@ -450,7 +450,7 @@ fun VideoGridCard(
         shape = RoundedCornerShape(12.dp),
         border = if (isCurrentlyPlaying) BorderStroke(1.5.dp, NovaAccent) else null,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentlyPlaying) 4.dp else 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentlyPlaying) 6.dp else 4.dp)
     ) {
         Column {
             Box(
