@@ -584,6 +584,12 @@ fun NovaPlayerApp(
                         onCreatePlaylist = { name ->
                             viewModel.createAudioPlaylist(name)
                         },
+                        onRemoveFromPlaylist = { plId, songId ->
+                            viewModel.removeSongFromAudioPlaylist(plId, songId)
+                        },
+                        onDeletePlaylist = { plId ->
+                            viewModel.deleteAudioPlaylist(plId)
+                        },
                         onBack = { navController.popBackStack() }
                     )
                 }

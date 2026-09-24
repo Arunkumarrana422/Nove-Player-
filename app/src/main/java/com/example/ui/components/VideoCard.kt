@@ -430,6 +430,7 @@ fun VideoGridCard(
     video: Video,
     onClick: () -> Unit,
     isCurrentlyPlaying: Boolean = false,
+    currentPosMs: Long = 0L,
     onToggleFavorite: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -529,14 +530,16 @@ fun VideoGridCard(
                     }
                 }
 
-                if (video.lastPositionMs > 0) {
+                val activePos = if (isCurrentlyPlaying && currentPosMs > 0L) currentPosMs else video.lastPositionMs
+                val activeFraction = if (video.durationMs > 0) (activePos.toFloat() / video.durationMs.toFloat()).coerceIn(0f, 1f) else video.progressFraction
+                if (activePos > 0 || isCurrentlyPlaying) {
                     LinearProgressIndicator(
-                        progress = { video.progressFraction },
+                        progress = { activeFraction },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(3.dp)
                             .align(Alignment.BottomCenter),
-                        color = if (isPartiallyWatched) HalfWatchedColor else NovaAccent,
+                        color = NovaAccent,
                         trackColor = Color(0x66FFFFFF),
                     )
                 }

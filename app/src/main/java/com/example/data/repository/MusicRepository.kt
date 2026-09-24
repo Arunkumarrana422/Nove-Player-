@@ -27,28 +27,7 @@ class MusicRepository(private val context: Context) {
     private val _favoriteSongIds = MutableStateFlow<Set<String>>(emptySet())
     val favoriteSongIdsFlow: Flow<Set<String>> = _favoriteSongIds.asStateFlow()
 
-    private val _audioPlaylists = MutableStateFlow<List<AudioPlaylist>>(
-        listOf(
-            AudioPlaylist(
-                id = 1L,
-                name = "My Favorites",
-                description = "Top favorite tracks",
-                songCount = 0
-            ),
-            AudioPlaylist(
-                id = 2L,
-                name = "Driving Chill",
-                description = "Relaxing songs for the road",
-                songCount = 0
-            ),
-            AudioPlaylist(
-                id = 3L,
-                name = "Gym & Workout",
-                description = "High energy music",
-                songCount = 0
-            )
-        )
-    )
+    private val _audioPlaylists = MutableStateFlow<List<AudioPlaylist>>(emptyList())
     val audioPlaylistsFlow: Flow<List<AudioPlaylist>> = _audioPlaylists.asStateFlow()
 
     // Sample fallback tracks with high quality royalty-free demo streams so users can test immediately

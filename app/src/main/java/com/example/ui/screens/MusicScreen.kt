@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Folder
@@ -107,6 +108,8 @@ fun MusicScreen(
     onToggleFavorite: (Song) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
     onCreatePlaylist: (String) -> Unit,
+    onRemoveFromPlaylist: ((Long, String) -> Unit)? = null,
+    onDeletePlaylist: ((Long) -> Unit)? = null,
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -233,6 +236,8 @@ fun MusicScreen(
             onPlaySong = onPlaySong,
             onToggleFavorite = onToggleFavorite,
             onAddToPlaylist = onAddToPlaylist,
+            onRemoveFromPlaylist = onRemoveFromPlaylist,
+            onDeletePlaylist = onDeletePlaylist,
             onBack = { selectedPlaylist = null }
         )
         return
@@ -412,7 +417,8 @@ fun MusicScreen(
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable { selectedArtist = artist },
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -476,7 +482,8 @@ fun MusicScreen(
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable { selectedAlbum = album },
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(10.dp)) {
                                         Box(
@@ -540,7 +547,8 @@ fun MusicScreen(
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable { selectedFolder = folder },
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(14.dp),
@@ -893,6 +901,8 @@ fun PlaylistDetailScreen(
     onPlaySong: (Song, List<Song>) -> Unit,
     onToggleFavorite: (Song) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
+    onRemoveFromPlaylist: ((Long, String) -> Unit)?,
+    onDeletePlaylist: ((Long) -> Unit)?,
     onBack: () -> Unit
 ) {
     Column(
@@ -919,6 +929,18 @@ fun PlaylistDetailScreen(
                     text = "${playlist.songs.size} tracks",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(
+                onClick = {
+                    onDeletePlaylist?.invoke(playlist.id)
+                    onBack()
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete Playlist",
+                    tint = Color(0xFFEF4444)
                 )
             }
             Button(
@@ -949,7 +971,8 @@ fun PlaylistDetailScreen(
                     isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
                     onClick = { onPlaySong(song, playlist.songs) },
                     onToggleFavorite = { onToggleFavorite(song) },
-                    onAddToPlaylist = { onAddToPlaylist(song) }
+                    onAddToPlaylist = { onAddToPlaylist(song) },
+                    onRemoveFromPlaylist = { onRemoveFromPlaylist?.invoke(playlist.id, song.id) }
                 )
             }
         }
@@ -963,6 +986,7 @@ fun SongItemCard(
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit,
     onAddToPlaylist: () -> Unit,
+    onRemoveFromPlaylist: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -1060,67 +1084,81 @@ fun SongItemCard(
                 }
             }
 
-            // Favorite Button
-            IconButton(
-                onClick = onToggleFavorite,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "Favorite",
-                    tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            // More Menu
-            Box {
+            if (onRemoveFromPlaylist != null) {
                 IconButton(
-                    onClick = { menuExpanded = true },
+                    onClick = onRemoveFromPlaylist,
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Song options",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Remove from playlist",
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            } else {
+                // Favorite Button
+                IconButton(
+                    onClick = onToggleFavorite,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorite",
+                        tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
 
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Play Song") },
-                        leadingIcon = { Icon(Icons.Default.PlayArrow, null, tint = NovaAccent) },
-                        onClick = {
-                            menuExpanded = false
-                            onClick()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(if (song.isFavorite) "Remove Favorite" else "Add to Favorite") },
-                        leadingIcon = {
-                            Icon(
-                                if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                null,
-                                tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurface
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            onToggleFavorite()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Add to Playlist") },
-                        leadingIcon = { Icon(Icons.Default.PlaylistAdd, null) },
-                        onClick = {
-                            menuExpanded = false
-                            onAddToPlaylist()
-                        }
-                    )
+                // More Menu
+                Box {
+                    IconButton(
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Song options",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Play Song") },
+                            leadingIcon = { Icon(Icons.Default.PlayArrow, null, tint = NovaAccent) },
+                            onClick = {
+                                menuExpanded = false
+                                onClick()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (song.isFavorite) "Remove Favorite" else "Add to Favorite") },
+                            leadingIcon = {
+                                Icon(
+                                    if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    null,
+                                    tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onToggleFavorite()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Add to Playlist") },
+                            leadingIcon = { Icon(Icons.Default.PlaylistAdd, null) },
+                            onClick = {
+                                menuExpanded = false
+                                onAddToPlaylist()
+                            }
+                        )
+                    }
                 }
             }
         }
