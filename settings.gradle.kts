@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Nova Player"
+rootProject.name = "Arvexa Player"
 
 include(":app")

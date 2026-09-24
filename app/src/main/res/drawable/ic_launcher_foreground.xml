@@ -6,58 +6,99 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Hexagonal / Rounded Shield Background Glow -->
+    <!-- Outer Circular Soft Glow -->
     <path
-        android:pathData="M38,30 L70,30 C76,30 80,34 80,40 L80,68 C80,74 76,78 70,78 L38,78 C32,78 28,74 28,68 L28,40 C28,34 32,30 38,30 Z">
+        android:pathData="M54,54m-27,0a27,27 0,1 1,54 0a27,27 0,1 1,-54 0">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:startX="28"
-                android:startY="30"
-                android:endX="80"
-                android:endY="78"
+                android:startX="27"
+                android:startY="27"
+                android:endX="81"
+                android:endY="81"
                 android:type="linear">
-                <item android:offset="0.0" android:color="#334F46E5" />
-                <item android:offset="1.0" android:color="#222563EB" />
+                <item android:offset="0.0" android:color="#506366F1" />
+                <item android:offset="1.0" android:color="#2006B6D4" />
             </gradient>
         </aapt:attr>
     </path>
 
-    <!-- Outer Play Icon Ring/Facet Left Half -->
+    <!-- Main Outer Circular Ring Solid Fill as Border -->
     <path
-        android:pathData="M44,36 L68,51 C70.5,52.5 70.5,55.5 68,57 L44,72 C41.5,73.5 38,71.7 38,68.7 L38,39.3 C38,36.3 41.5,34.5 44,36 Z">
+        android:pathData="M54,54m-25,0a25,25 0,1 1,50 0a25,25 0,1 1,-50 0">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:startX="38"
-                android:startY="36"
-                android:endX="70"
-                android:endY="72"
+                android:startX="29"
+                android:startY="29"
+                android:endX="79"
+                android:endY="79"
                 android:type="linear">
-                <item android:offset="0.0" android:color="#4F46E5" />
+                <item android:offset="0.0" android:color="#818CF8" />
+                <item android:offset="0.5" android:color="#38BDF8" />
+                <item android:offset="1.0" android:color="#4F46E5" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Inner Dark Circular Core -->
+    <path
+        android:pathData="M54,54m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="32"
+                android:startY="32"
+                android:endX="76"
+                android:endY="76"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#1E1B4B" />
+                <item android:offset="0.6" android:color="#0F172A" />
+                <item android:offset="1.0" android:color="#020617" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Inner Circular Accent Ring -->
+    <path
+        android:strokeWidth="1.5"
+        android:strokeColor="#4038BDF8"
+        android:fillColor="#00000000"
+        android:pathData="M54,54m-19,0a19,19 0,1 1,38 0a19,19 0,1 1,-38 0" />
+
+    <!-- Bold Centered Play Triangle with Rounded Aesthetics -->
+    <path
+        android:pathData="M46.5,41.5 L65.5,52.5 C67.5,53.7 67.5,56.3 65.5,57.5 L46.5,68.5 C44.5,69.7 42,68.2 42,65.8 L42,44.2 C42,41.8 44.5,40.3 46.5,41.5 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="42"
+                android:startY="41"
+                android:endX="67"
+                android:endY="69"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#6366F1" />
                 <item android:offset="0.5" android:color="#2563EB" />
-                <item android:offset="1.0" android:color="#22D3EE" />
+                <item android:offset="1.0" android:color="#06B6D4" />
             </gradient>
         </aapt:attr>
     </path>
 
-    <!-- Inner Highlight / Facet Top -->
+    <!-- Play Button Gloss / Top Shine -->
     <path
-        android:pathData="M44,36 L68,51 C69.5,52 70,53 70,54 L52,54 L38,44 L38,39.3 C38,36.3 41.5,34.5 44,36 Z">
+        android:pathData="M46.5,41.5 L65.5,52.5 C66.8,53.3 67.2,54.5 66.8,55.5 L52.5,55.5 L42,48 L42,44.2 C42,41.8 44.5,40.3 46.5,41.5 Z">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:startX="38"
-                android:startY="36"
-                android:endX="70"
-                android:endY="54"
+                android:startX="42"
+                android:startY="41"
+                android:endX="67"
+                android:endY="55"
                 android:type="linear">
-                <item android:offset="0.0" android:color="#80FFFFFF" />
+                <item android:offset="0.0" android:color="#70FFFFFF" />
                 <item android:offset="1.0" android:color="#00FFFFFF" />
             </gradient>
         </aapt:attr>
     </path>
 
-    <!-- Center Bright Star / Nova Sparkle -->
+    <!-- Center Arvexa Sparkle Accent -->
     <path
-        android:pathData="M54,49 L55.5,52.5 L59,54 L55.5,55.5 L54,59 L52.5,55.5 L49,54 L52.5,52.5 Z"
+        android:pathData="M53.5,50.5 L54.8,53.2 L57.5,54.5 L54.8,55.8 L53.5,58.5 L52.2,55.8 L49.5,54.5 L52.2,53.2 Z"
         android:fillColor="#FFFFFF" />
 
 </vector>

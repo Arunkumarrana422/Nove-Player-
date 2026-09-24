@@ -1,0 +1,6 @@
+{
+  "name": "Arvexa Player",
+  "description": "A feature-rich video and audio media player app with advanced controls, gesture support, and streaming capabilities",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -500,7 +500,7 @@ fun PlayerScreen(
                 .padding(bottom = if (areControlsVisible) 115.dp else 24.dp)
         )
 
-        // MX Player Controls Overlay
+        // Arvexa Player Controls Overlay
         PlayerControlsOverlay(
             isVisible = areControlsVisible,
             video = video,

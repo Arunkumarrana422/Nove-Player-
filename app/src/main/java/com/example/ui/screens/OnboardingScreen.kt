@@ -83,7 +83,7 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Welcome to Nova Player",
+                text = "Welcome to Arvexa Player",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
@@ -92,7 +92,7 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "The ultimate MX Player–style video playback engine for Android with fluid touch gestures and multi-format support.",
+                text = "The ultimate video and audio playback engine for Android with fluid touch gestures, multi-format support, and streaming.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center

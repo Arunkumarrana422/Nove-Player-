@@ -60,6 +60,19 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
+fun ArvexaPlayerTheme(
+    themePreference: ThemePreference = ThemePreference.SYSTEM,
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    NovaPlayerTheme(
+        themePreference = themePreference,
+        dynamicColor = dynamicColor,
+        content = content
+    )
+}
+
+@Composable
 fun NovaPlayerTheme(
     themePreference: ThemePreference = ThemePreference.SYSTEM,
     dynamicColor: Boolean = false,

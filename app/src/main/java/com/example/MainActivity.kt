@@ -350,11 +350,11 @@ fun NovaPlayerApp(
         topBar = {
             if (showTopBar) {
                 val topTitle = when (pagerState.currentPage) {
-                    0 -> "Nova Player"
+                    0 -> "Arvexa Player"
                     1 -> "Video Library"
                     2 -> "Folders"
                     3 -> "Playlists"
-                    else -> "Nova Player"
+                    else -> "Arvexa Player"
                 }
                 NovaAppBar(
                     title = topTitle,

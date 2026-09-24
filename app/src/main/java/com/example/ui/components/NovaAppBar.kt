@@ -49,7 +49,7 @@ import com.example.ui.theme.NovaSecondary
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NovaAppBar(
-    title: String = "Nova Player",
+    title: String = "Arvexa Player",
     isRefreshing: Boolean = false,
     onSearchClick: () -> Unit = {},
     onRefreshClick: () -> Unit = {},
@@ -80,7 +80,7 @@ fun NovaAppBar(
                                 Brush.linearGradient(
                                     listOf(NovaPrimary, NovaSecondary, NovaAccent)
                                 ),
-                                shape = RoundedCornerShape(10.dp)
+                                shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
                     ) {

@@ -309,11 +309,11 @@ fun SettingsScreen(
 
             // ABOUT
             item {
-                SettingsSection(title = "ABOUT NOVA PLAYER") {
+                SettingsSection(title = "ABOUT ARVEXA PLAYER") {
                     SettingsClickableRow(
                         icon = Icons.Default.Info,
-                        title = "Nova Player",
-                        subtitle = "Version 1.0.0 (Media3 Hardware Accelerated Playback)",
+                        title = "Arvexa Player",
+                        subtitle = "Version 1.0.1 (Hardware Accelerated Media Engine)",
                         onClick = { showAboutDialog = true }
                     )
                 }
@@ -325,12 +325,12 @@ fun SettingsScreen(
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showAboutDialog = false },
             title = {
-                Text("Nova Player v1.0.0", fontWeight = FontWeight.Bold)
+                Text("Arvexa Player v1.0.1", fontWeight = FontWeight.Bold)
             },
             text = {
                 Column {
                     Text("• Hardware Accelerated Video Decoding (HW+ / SW)")
-                    Text("• MX Player–style Gestures (Volume, Brightness, Seek, 2x Speed)")
+                    Text("• Arvexa Fluid Gestures (Volume, Brightness, Seek, 2x Speed)")
                     Text("• Multi-track Audio and Subtitle sync (.srt / .vtt)")
                     Text("• Custom Playlists and Folder Exploration")
                     Text("• HTTP, HTTPS, and HLS Streaming Support")
