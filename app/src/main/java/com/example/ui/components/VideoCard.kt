@@ -330,7 +330,16 @@ fun VideoCard(
                     }
                 }
 
-                if (isPartiallyWatched) {
+                if (isCurrentlyPlaying) {
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "${Video.formatDuration(video.lastPositionMs)} / ${video.durationFormatted}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = NovaAccent,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else if (isPartiallyWatched) {
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = "Resume at ${Video.formatDuration(video.lastPositionMs)} (${(video.progressFraction * 100).toInt()}%)",

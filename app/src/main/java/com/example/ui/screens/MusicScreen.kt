@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import android.content.ContentUris
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,9 +22,12 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Clear
@@ -54,12 +59,13 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,6 +77,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.domain.model.AudioAlbum
 import com.example.domain.model.AudioArtist
 import com.example.domain.model.AudioFolder
@@ -81,6 +88,7 @@ import com.example.ui.components.NowPlayingEqualizer
 import com.example.ui.theme.NovaAccent
 import com.example.ui.theme.NovaPrimary
 import com.example.ui.theme.NovaSecondary
+import kotlinx.coroutines.launch
 
 enum class MusicSort(val label: String) {
     TITLE_ASC("Title (A-Z)"),
@@ -103,11 +111,28 @@ fun MusicScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Tracks", "Artists", "Albums", "Folders", "Playlists", "Favorites")
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(selectedTab) {
+        if (pagerState.currentPage != selectedTab) {
+            pagerState.animateScrollToPage(selectedTab)
+        }
+    }
+    LaunchedEffect(pagerState.currentPage) {
+        selectedTab = pagerState.currentPage
+    }
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     var currentSort by remember { mutableStateOf(MusicSort.TITLE_ASC) }
     var showSortMenu by remember { mutableStateOf(false) }
+
+    // Navigation sub-screens for folders, albums, artists, playlists
+    var selectedFolder by remember { mutableStateOf<AudioFolder?>(null) }
+    var selectedAlbum by remember { mutableStateOf<AudioAlbum?>(null) }
+    var selectedArtist by remember { mutableStateOf<AudioArtist?>(null) }
+    var selectedPlaylist by remember { mutableStateOf<AudioPlaylist?>(null) }
 
     // Filtered and sorted songs
     val filteredSongs = remember(songs, searchQuery, currentSort) {
@@ -153,6 +178,59 @@ fun MusicScreen(
             val totalDur = list.sumOf { it.durationMs }
             AudioFolder(name = folder, path = path, songCount = list.size, totalDurationMs = totalDur, songs = list)
         }.sortedByDescending { it.songCount }
+    }
+
+    // Handle Sub-screen Detail Views
+    if (selectedFolder != null) {
+        FolderDetailScreen(
+            folder = selectedFolder!!,
+            currentPlayingSongId = currentPlayingSongId,
+            isPlaying = isPlaying,
+            onPlaySong = onPlaySong,
+            onToggleFavorite = onToggleFavorite,
+            onAddToPlaylist = onAddToPlaylist,
+            onBack = { selectedFolder = null }
+        )
+        return
+    }
+
+    if (selectedAlbum != null) {
+        AlbumDetailScreen(
+            album = selectedAlbum!!,
+            currentPlayingSongId = currentPlayingSongId,
+            isPlaying = isPlaying,
+            onPlaySong = onPlaySong,
+            onToggleFavorite = onToggleFavorite,
+            onAddToPlaylist = onAddToPlaylist,
+            onBack = { selectedAlbum = null }
+        )
+        return
+    }
+
+    if (selectedArtist != null) {
+        ArtistDetailScreen(
+            artist = selectedArtist!!,
+            currentPlayingSongId = currentPlayingSongId,
+            isPlaying = isPlaying,
+            onPlaySong = onPlaySong,
+            onToggleFavorite = onToggleFavorite,
+            onAddToPlaylist = onAddToPlaylist,
+            onBack = { selectedArtist = null }
+        )
+        return
+    }
+
+    if (selectedPlaylist != null) {
+        PlaylistDetailScreen(
+            playlist = selectedPlaylist!!,
+            currentPlayingSongId = currentPlayingSongId,
+            isPlaying = isPlaying,
+            onPlaySong = onPlaySong,
+            onToggleFavorite = onToggleFavorite,
+            onAddToPlaylist = onAddToPlaylist,
+            onBack = { selectedPlaylist = null }
+        )
+        return
     }
 
     Column(
@@ -256,7 +334,10 @@ fun MusicScreen(
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTab == index,
-                    onClick = { selectedTab = index },
+                    onClick = {
+                        selectedTab = index
+                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                    },
                     text = {
                         Text(
                             text = title,
@@ -270,176 +351,230 @@ fun MusicScreen(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Tab Content with adequate top padding for cards
-        when (selectedTab) {
-            0 -> { // Tracks (All Songs)
-                if (filteredSongs.isEmpty()) {
-                    EmptyStateView(
-                        icon = Icons.Default.MusicNote,
-                        title = "No Music Found",
-                        description = "No local audio tracks found on device."
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(filteredSongs, key = { it.id }) { song ->
-                            SongItemCard(
-                                song = song,
-                                isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
-                                onClick = { onPlaySong(song, filteredSongs) },
-                                onToggleFavorite = { onToggleFavorite(song) },
-                                onAddToPlaylist = { onAddToPlaylist(song) }
-                            )
+        // Horizontal Pager for Swipeable Tabs
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            when (page) {
+                0 -> { // Tracks
+                    if (filteredSongs.isEmpty()) {
+                        EmptyStateView(
+                            icon = Icons.Default.MusicNote,
+                            title = "No Music Found",
+                            description = "No local audio tracks found on device."
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(filteredSongs, key = { it.id }) { song ->
+                                SongItemCard(
+                                    song = song,
+                                    isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
+                                    onClick = { onPlaySong(song, filteredSongs) },
+                                    onToggleFavorite = { onToggleFavorite(song) },
+                                    onAddToPlaylist = { onAddToPlaylist(song) }
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            1 -> { // Artists
-                if (artists.isEmpty()) {
-                    EmptyStateView(icon = Icons.Default.Person, title = "No Artists", description = "No artist tags available.")
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(artists, key = { it.name }) { artist ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        if (artist.songs.isNotEmpty()) {
-                                            onPlaySong(artist.songs.first(), artist.songs)
-                                        }
-                                    },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                1 -> { // Artists
+                    if (artists.isEmpty()) {
+                        EmptyStateView(icon = Icons.Default.Person, title = "No Artists", description = "No artist tags available.")
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(artists, key = { it.name }) { artist ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { selectedArtist = artist },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                Brush.linearGradient(listOf(NovaPrimary, NovaAccent))
-                                            ),
-                                        contentAlignment = Alignment.Center
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
-                                    }
-                                    Spacer(modifier = Modifier.width(14.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = artist.name,
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "${artist.songCount} songs • ${artist.albumCount} albums",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            2 -> { // Albums
-                if (albums.isEmpty()) {
-                    EmptyStateView(icon = Icons.Default.Album, title = "No Albums", description = "No albums discovered.")
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(albums, key = { it.name }) { album ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        if (album.songs.isNotEmpty()) {
-                                            onPlaySong(album.songs.first(), album.songs)
+                                        Box(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    Brush.linearGradient(listOf(NovaPrimary, NovaAccent))
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
                                         }
-                                    },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                Column(modifier = Modifier.padding(10.dp)) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(110.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(
-                                                Brush.radialGradient(listOf(NovaSecondary, NovaPrimary, Color(0xFF1E293B)))
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
+                                        Spacer(modifier = Modifier.width(14.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = artist.name,
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = "${artist.songCount} songs • ${artist.albumCount} albums",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                         Icon(
-                                            imageVector = Icons.Default.Album,
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                                             contentDescription = null,
-                                            tint = Color.White.copy(alpha = 0.8f),
-                                            modifier = Modifier.size(48.dp)
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = album.name,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = "${album.artist} • ${album.songCount} tracks",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            3 -> { // Folders
-                if (folders.isEmpty()) {
-                    EmptyStateView(icon = Icons.Default.Folder, title = "No Music Folders", description = "No audio directories found.")
-                } else {
+                2 -> { // Albums
+                    if (albums.isEmpty()) {
+                        EmptyStateView(icon = Icons.Default.Album, title = "No Albums", description = "No albums discovered.")
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(albums, key = { it.name }) { album ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { selectedAlbum = album },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(110.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(
+                                                    Brush.radialGradient(listOf(NovaSecondary, NovaPrimary, Color(0xFF1E293B)))
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Album,
+                                                contentDescription = null,
+                                                tint = Color.White.copy(alpha = 0.8f),
+                                                modifier = Modifier.size(48.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = album.name,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "${album.artist} • ${album.songCount} tracks",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                3 -> { // Folders
+                    if (folders.isEmpty()) {
+                        EmptyStateView(icon = Icons.Default.Folder, title = "No Music Folders", description = "No audio directories found.")
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(folders, key = { it.name }) { folder ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { selectedFolder = folder },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(
+                                                    Brush.linearGradient(listOf(NovaPrimary, NovaSecondary))
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Default.Folder, contentDescription = null, tint = Color.White)
+                                        }
+                                        Spacer(modifier = Modifier.width(14.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = folder.name,
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = "${folder.songCount} songs • ${folder.totalDurationFormatted}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                4 -> { // Playlists
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(folders, key = { it.name }) { folder ->
+                        items(playlists, key = { it.id }) { pl ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
                                     .clickable {
-                                        if (folder.songs.isNotEmpty()) {
-                                            onPlaySong(folder.songs.first(), folder.songs)
-                                        }
+                                        val playlistObj = AudioPlaylist(id = pl.id, name = pl.name, description = pl.description, songs = pl.songs, songCount = pl.songCount)
+                                        selectedPlaylist = playlistObj
                                     },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -451,23 +586,23 @@ fun MusicScreen(
                                     Box(
                                         modifier = Modifier
                                             .size(48.dp)
+                                            .clip(RoundedCornerShape(10.dp))
                                             .background(
-                                                Brush.linearGradient(listOf(NovaPrimary, NovaSecondary)),
-                                                RoundedCornerShape(10.dp)
+                                                Brush.linearGradient(listOf(NovaSecondary, NovaAccent))
                                             ),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(Icons.Default.Folder, contentDescription = null, tint = Color.White)
+                                        Icon(Icons.Default.PlaylistPlay, contentDescription = null, tint = Color.White)
                                     }
                                     Spacer(modifier = Modifier.width(14.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = folder.name,
+                                            text = pl.name,
                                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
-                                            text = "${folder.songCount} songs • ${folder.totalDurationFormatted}",
+                                            text = "${pl.songCount} tracks • ${pl.description.ifBlank { "Custom Playlist" }}",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -483,90 +618,317 @@ fun MusicScreen(
                         }
                     }
                 }
-            }
 
-            4 -> { // Playlists
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(playlists, key = { it.id }) { pl ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    if (pl.songs.isNotEmpty()) {
-                                        onPlaySong(pl.songs.first(), pl.songs)
-                                    }
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                5 -> { // Favorites
+                    if (favoriteSongs.isEmpty()) {
+                        EmptyStateView(
+                            icon = Icons.Default.Favorite,
+                            title = "No Favorite Songs",
+                            description = "Tap the heart icon on any track to add it here."
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .background(
-                                            Brush.linearGradient(listOf(NovaSecondary, NovaAccent)),
-                                            RoundedCornerShape(10.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.PlaylistPlay, contentDescription = null, tint = Color.White)
-                                }
-                                Spacer(modifier = Modifier.width(14.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = pl.name,
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = "${pl.songCount} tracks • ${pl.description.ifBlank { "Custom Playlist" }}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
+                            items(favoriteSongs, key = { it.id }) { song ->
+                                SongItemCard(
+                                    song = song,
+                                    isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
+                                    onClick = { onPlaySong(song, favoriteSongs) },
+                                    onToggleFavorite = { onToggleFavorite(song) },
+                                    onAddToPlaylist = { onAddToPlaylist(song) }
                                 )
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
 
-            5 -> { // Favorites
-                if (favoriteSongs.isEmpty()) {
-                    EmptyStateView(
-                        icon = Icons.Default.Favorite,
-                        title = "No Favorite Songs",
-                        description = "Tap the heart icon on any track to add it here."
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(favoriteSongs, key = { it.id }) { song ->
-                            SongItemCard(
-                                song = song,
-                                isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
-                                onClick = { onPlaySong(song, favoriteSongs) },
-                                onToggleFavorite = { onToggleFavorite(song) },
-                                onAddToPlaylist = { onAddToPlaylist(song) }
-                            )
-                        }
+// Sub-screen Detail Composables
+@Composable
+fun FolderDetailScreen(
+    folder: AudioFolder,
+    currentPlayingSongId: String?,
+    isPlaying: Boolean,
+    onPlaySong: (Song, List<Song>) -> Unit,
+    onToggleFavorite: (Song) -> Unit,
+    onAddToPlaylist: (Song) -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = folder.name,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${folder.songCount} songs • ${folder.totalDurationFormatted}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = {
+                    if (folder.songs.isNotEmpty()) {
+                        onPlaySong(folder.songs.first(), folder.songs)
                     }
-                }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Play All")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(folder.songs, key = { it.id }) { song ->
+                SongItemCard(
+                    song = song,
+                    isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
+                    onClick = { onPlaySong(song, folder.songs) },
+                    onToggleFavorite = { onToggleFavorite(song) },
+                    onAddToPlaylist = { onAddToPlaylist(song) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AlbumDetailScreen(
+    album: AudioAlbum,
+    currentPlayingSongId: String?,
+    isPlaying: Boolean,
+    onPlaySong: (Song, List<Song>) -> Unit,
+    onToggleFavorite: (Song) -> Unit,
+    onAddToPlaylist: (Song) -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = album.name,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${album.artist} • ${album.songCount} tracks",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = {
+                    if (album.songs.isNotEmpty()) {
+                        onPlaySong(album.songs.first(), album.songs)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Play All")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(album.songs, key = { it.id }) { song ->
+                SongItemCard(
+                    song = song,
+                    isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
+                    onClick = { onPlaySong(song, album.songs) },
+                    onToggleFavorite = { onToggleFavorite(song) },
+                    onAddToPlaylist = { onAddToPlaylist(song) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ArtistDetailScreen(
+    artist: AudioArtist,
+    currentPlayingSongId: String?,
+    isPlaying: Boolean,
+    onPlaySong: (Song, List<Song>) -> Unit,
+    onToggleFavorite: (Song) -> Unit,
+    onAddToPlaylist: (Song) -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = artist.name,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${artist.songCount} songs • ${artist.albumCount} albums",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = {
+                    if (artist.songs.isNotEmpty()) {
+                        onPlaySong(artist.songs.first(), artist.songs)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Play All")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(artist.songs, key = { it.id }) { song ->
+                SongItemCard(
+                    song = song,
+                    isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
+                    onClick = { onPlaySong(song, artist.songs) },
+                    onToggleFavorite = { onToggleFavorite(song) },
+                    onAddToPlaylist = { onAddToPlaylist(song) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PlaylistDetailScreen(
+    playlist: AudioPlaylist,
+    currentPlayingSongId: String?,
+    isPlaying: Boolean,
+    onPlaySong: (Song, List<Song>) -> Unit,
+    onToggleFavorite: (Song) -> Unit,
+    onAddToPlaylist: (Song) -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = playlist.name,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${playlist.songs.size} tracks",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = {
+                    if (playlist.songs.isNotEmpty()) {
+                        onPlaySong(playlist.songs.first(), playlist.songs)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Play All")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(playlist.songs, key = { it.id }) { song ->
+                SongItemCard(
+                    song = song,
+                    isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
+                    onClick = { onPlaySong(song, playlist.songs) },
+                    onToggleFavorite = { onToggleFavorite(song) },
+                    onAddToPlaylist = { onAddToPlaylist(song) }
+                )
             }
         }
     }
@@ -582,10 +944,14 @@ fun SongItemCard(
     modifier: Modifier = Modifier
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    val albumArtUri = remember(song.albumId) {
+        ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
+    }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .testTag("song_item_${song.id}"),
         shape = RoundedCornerShape(12.dp),
@@ -600,7 +966,7 @@ fun SongItemCard(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Album Art Thumbnail Box
+            // Album Art Thumbnail Box with Coil AsyncImage and fallback
             Box(
                 modifier = Modifier
                     .size(46.dp)
@@ -612,14 +978,27 @@ fun SongItemCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
+                AsyncImage(
+                    model = albumArtUri,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
                 if (isCurrentlyPlaying) {
-                    NowPlayingEqualizer(modifier = Modifier.size(20.dp), barColor = Color.White)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0x66000000)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        NowPlayingEqualizer(modifier = Modifier.size(20.dp), barColor = Color.White)
+                    }
                 } else {
                     Icon(
                         imageVector = Icons.Default.MusicNote,
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(22.dp)
+                        tint = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
