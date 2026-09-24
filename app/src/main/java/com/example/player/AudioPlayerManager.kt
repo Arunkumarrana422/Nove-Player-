@@ -133,7 +133,7 @@ class AudioPlayerManager(private val context: Context) {
             val channel = NotificationChannel(
                 "media_playback_channel",
                 "Media Playback",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Controls for music and audio playback"
                 setShowBadge(true)

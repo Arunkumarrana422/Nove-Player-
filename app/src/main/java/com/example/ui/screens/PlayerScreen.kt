@@ -419,18 +419,13 @@ fun PlayerScreen(
                                 if (isLongPressActive) {
                                     change.consume()
                                 } else {
-                                    if (!isDragging && duration > 100 && totalMoveSq < 4900f) {
+                                    if (!isDragging && duration > 400L && totalMoveSq < 10000f) {
                                         isLongPressActive = true
                                         originalSpeed = playbackSpeed
                                         playerManager.setSpeed(2.0f)
                                         hudState = GestureHudState.SpeedBoost(2.0f)
                                         change.consume()
-                                    } else if (totalMoveSq > 4900f) {
-                                        if (isLongPressActive) {
-                                            isLongPressActive = false
-                                            playerManager.setSpeed(originalSpeed)
-                                            hudState = GestureHudState.None
-                                        }
+                                    } else if (totalMoveSq > 10000f) {
                                         if (!isDragging) {
                                             isDragging = true
                                             isDragHorizontal = kotlin.math.abs(totalDragX) > kotlin.math.abs(totalDragY)
