@@ -170,11 +170,14 @@ class NovaPlayerManager(private val context: Context) {
         val idx = actualList.indexOfFirst { it.id == video.id }.coerceAtLeast(0)
         _queueIndex.value = idx
 
-        val mediaItem = MediaItem.fromUri(Uri.parse(video.uri))
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
-
         val resumePos = if (startPositionMs > 0) startPositionMs else video.lastPositionMs
+        val mediaItem = MediaItem.fromUri(Uri.parse(video.uri))
+        if (resumePos > 0) {
+            exoPlayer.setMediaItem(mediaItem, resumePos)
+        } else {
+            exoPlayer.setMediaItem(mediaItem)
+        }
+        exoPlayer.prepare()
         if (resumePos > 0) {
             exoPlayer.seekTo(resumePos)
         }
