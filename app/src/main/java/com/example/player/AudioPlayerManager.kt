@@ -133,10 +133,10 @@ class AudioPlayerManager(private val context: Context) {
             val channel = NotificationChannel(
                 "media_playback_channel",
                 "Media Playback",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Controls for music and audio playback"
-                setShowBadge(false)
+                setShowBadge(true)
             }
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
@@ -177,9 +177,12 @@ class AudioPlayerManager(private val context: Context) {
 
         val notification = NotificationCompat.Builder(context, "media_playback_channel")
             .setSmallIcon(android.R.drawable.ic_media_play)
+            .setContentTitle(song.title)
+            .setContentText(song.artist)
             .setContentIntent(pendingIntent)
             .setDeleteIntent(createActionPendingIntent("ACTION_STOP"))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOngoing(isPlaying)
             .setCustomContentView(remoteViews)
             .setCustomBigContentView(remoteViews)
