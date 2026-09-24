@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.model.Playlist
+import com.example.domain.model.Video
 import com.example.domain.model.VideoFolder
 import com.example.ui.theme.NovaAccent
 import com.example.ui.theme.NovaPrimary
@@ -41,6 +42,10 @@ import com.example.ui.theme.NovaSecondary
 fun FolderCard(
     folder: VideoFolder,
     onClick: () -> Unit,
+    isCurrentlyPlaying: Boolean = false,
+    playingVideoTitle: String? = null,
+    playingPosMs: Long = 0L,
+    playingDurMs: Long = 0L,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -49,8 +54,11 @@ fun FolderCard(
             .clickable(onClick = onClick)
             .testTag("folder_card_${folder.name}"),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        border = if (isCurrentlyPlaying) androidx.compose.foundation.BorderStroke(1.5.dp, NovaAccent) else null,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isCurrentlyPlaying) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f) else MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentlyPlaying) 4.dp else 1.dp)
     ) {
         Row(
             modifier = Modifier
@@ -63,18 +71,22 @@ fun FolderCard(
                     .size(48.dp)
                     .background(
                         Brush.linearGradient(
-                            listOf(NovaPrimary.copy(alpha = 0.8f), NovaSecondary.copy(alpha = 0.8f))
+                            if (isCurrentlyPlaying) listOf(NovaPrimary, NovaAccent) else listOf(NovaPrimary.copy(alpha = 0.8f), NovaSecondary.copy(alpha = 0.8f))
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Folder,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(26.dp)
-                )
+                if (isCurrentlyPlaying) {
+                    NowPlayingEqualizer(modifier = Modifier.size(22.dp), barColor = Color.White)
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(14.dp))
@@ -83,24 +95,45 @@ fun FolderCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = folder.name,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "${folder.videoCount} videos • ${folder.totalDurationFormatted}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (isCurrentlyPlaying) {
+                        NowPlayingEqualizer(modifier = Modifier.size(14.dp), barColor = NovaAccent)
+                    }
+                    Text(
+                        text = folder.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = if (isCurrentlyPlaying) FontWeight.Bold else FontWeight.SemiBold
+                        ),
+                        color = if (isCurrentlyPlaying) NovaAccent else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (isCurrentlyPlaying && playingPosMs > 0) {
+                    Text(
+                        text = "▶ ${playingVideoTitle ?: "Playing"} • ${Video.formatDuration(playingPosMs)} / ${Video.formatDuration(playingDurMs.takeIf { it > 0 } ?: folder.totalDurationMs)}",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                        color = NovaAccent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    Text(
+                        text = "${folder.videoCount} videos • ${folder.totalDurationFormatted}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                tint = if (isCurrentlyPlaying) NovaAccent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(16.dp)
             )
         }

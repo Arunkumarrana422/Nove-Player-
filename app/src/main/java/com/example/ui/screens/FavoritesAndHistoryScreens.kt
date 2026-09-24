@@ -90,8 +90,8 @@ fun FavoritesScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 90.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(favorites, key = { it.id }) { video ->
                     VideoCard(
@@ -161,8 +161,8 @@ fun HistoryScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 90.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(history, key = { it.id }) { video ->
                     VideoCard(

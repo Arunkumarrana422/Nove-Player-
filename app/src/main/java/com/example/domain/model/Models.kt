@@ -85,6 +85,80 @@ data class Playlist(
     val thumbnailUri: String = ""
 )
 
+data class Song(
+    val id: String,
+    val title: String,
+    val artist: String = "Unknown Artist",
+    val album: String = "Unknown Album",
+    val albumId: Long = 0L,
+    val durationMs: Long = 0L,
+    val sizeBytes: Long = 0L,
+    val uri: String,
+    val dataPath: String = "",
+    val isFavorite: Boolean = false,
+    val dateAdded: Long = System.currentTimeMillis(),
+    val folderName: String = "Music",
+    val trackNumber: Int = 0,
+    val year: Int = 0,
+    val genre: String = "Music",
+    val bitRate: String = "320 kbps"
+) {
+    val durationFormatted: String
+        get() = Video.formatDuration(durationMs)
+
+    val sizeFormatted: String
+        get() = Video.formatFileSize(sizeBytes)
+}
+
+data class AudioAlbum(
+    val id: Long,
+    val name: String,
+    val artist: String,
+    val songCount: Int,
+    val songs: List<Song> = emptyList()
+)
+
+data class AudioArtist(
+    val name: String,
+    val songCount: Int,
+    val albumCount: Int,
+    val songs: List<Song> = emptyList()
+)
+
+data class AudioFolder(
+    val name: String,
+    val path: String,
+    val songCount: Int,
+    val totalDurationMs: Long,
+    val songs: List<Song> = emptyList()
+) {
+    val totalDurationFormatted: String
+        get() = Video.formatDuration(totalDurationMs)
+}
+
+data class AudioPlaylist(
+    val id: Long = 0L,
+    val name: String,
+    val description: String = "",
+    val createdAt: Long = System.currentTimeMillis(),
+    val songCount: Int = 0,
+    val songs: List<Song> = emptyList()
+)
+
+enum class AudioRepeatMode(val label: String) {
+    OFF("Repeat Off"),
+    ALL("Repeat All"),
+    ONE("Repeat Current")
+}
+
+data class EqualizerPreset(
+    val id: String,
+    val name: String,
+    val bassGain: Float = 0f,
+    val midGain: Float = 0f,
+    val trebleGain: Float = 0f
+)
+
 data class SubtitleTrack(
     val id: String,
     val language: String,

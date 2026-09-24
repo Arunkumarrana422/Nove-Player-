@@ -52,11 +52,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.domain.model.Playlist
+import com.example.domain.model.Song
 import com.example.domain.model.ThemePreference
 import com.example.domain.model.Video
 import com.example.ui.components.AddToPlaylistDialog
 import com.example.ui.components.CreatePlaylistDialog
 import com.example.ui.components.DeleteVideoDialog
+import com.example.ui.components.FullMusicPlayerBottomSheet
+import com.example.ui.components.MiniAudioPlayerBar
 import com.example.ui.components.MiniPlayerView
 import com.example.ui.components.NovaAppBar
 import com.example.ui.components.VideoInfoBottomSheet
@@ -66,6 +69,7 @@ import com.example.ui.screens.FavoritesScreen
 import com.example.ui.screens.FoldersScreen
 import com.example.ui.screens.HistoryScreen
 import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.MusicScreen
 import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.OnlineStreamScreen
 import com.example.ui.screens.PlayerScreen
@@ -133,6 +137,37 @@ class MainActivity : ComponentActivity() {
         try {
             contentResolver.unregisterContentObserver(mediaObserver)
         } catch (_: Exception) {}
+
+        // Enforce background audio playback preference
+        val bgAudio = viewModel.userSettings.value.backgroundAudioEnabled
+        if (!bgAudio) {
+            val isPip = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) isInPictureInPictureMode else false
+            if (!isPip) {
+                if (viewModel.playerManager.isPlaying.value) {
+                    viewModel.playerManager.pause()
+                }
+                if (viewModel.audioPlayerManager.isPlaying.value) {
+                    viewModel.audioPlayerManager.pause()
+                }
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Stop audio when background audio is disabled
+        val bgAudio = viewModel.userSettings.value.backgroundAudioEnabled
+        if (!bgAudio) {
+            val isPip = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) isInPictureInPictureMode else false
+            if (!isPip) {
+                if (viewModel.playerManager.isPlaying.value) {
+                    viewModel.playerManager.pause()
+                }
+                if (viewModel.audioPlayerManager.isPlaying.value) {
+                    viewModel.audioPlayerManager.pause()
+                }
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -165,7 +200,10 @@ class MainActivity : ComponentActivity() {
 
     private fun checkAndRequestPermissions() {
         val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arrayOf(Manifest.permission.READ_MEDIA_VIDEO)
+            arrayOf(
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_AUDIO
+            )
         } else {
             arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
@@ -192,8 +230,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (viewModel.playerManager.isPlaying.value && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            enterPiPMode()
+        val bgAudio = viewModel.userSettings.value.backgroundAudioEnabled
+        if (bgAudio) {
+            if (viewModel.playerManager.isPlaying.value && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                enterPiPMode()
+            }
+        } else {
+            // Strictly pause if background audio playback is turned off
+            if (viewModel.playerManager.isPlaying.value) {
+                viewModel.playerManager.pause()
+            }
+            if (viewModel.audioPlayerManager.isPlaying.value) {
+                viewModel.audioPlayerManager.pause()
+            }
         }
     }
 }
@@ -221,6 +270,13 @@ fun NovaPlayerApp(
     val selectedFolder by viewModel.selectedFolder.collectAsState()
     val selectedPlaylist by viewModel.selectedPlaylist.collectAsState()
     val isScanning by viewModel.isScanning.collectAsState()
+
+    // Music states
+    val allSongs by viewModel.allSongs.collectAsState()
+    val audioPlaylists by viewModel.audioPlaylists.collectAsState()
+    val currentSongPlaying by viewModel.audioPlayerManager.currentSong.collectAsState()
+    val isAudioPlaying by viewModel.audioPlayerManager.isPlaying.collectAsState()
+    val isFullPlayerOpen by viewModel.audioPlayerManager.isFullPlayerOpen.collectAsState()
 
     // Active Player Manager states
     val currentVideoPlaying by viewModel.playerManager.currentVideo.collectAsState()
@@ -282,7 +338,7 @@ fun NovaPlayerApp(
                     1 -> "Video Library"
                     2 -> "Folders"
                     3 -> "Playlists"
-                    4 -> "Network Stream"
+                    4 -> "Music Player"
                     else -> "Nova Player"
                 }
                 NovaAppBar(
@@ -297,7 +353,7 @@ fun NovaPlayerApp(
         bottomBar = {
             if (showBottomBar) {
                 Column {
-                    // Floating MiniPlayer bar when playing
+                    // Floating MiniPlayer bar when playing video
                     if (currentVideoPlaying != null) {
                         MiniPlayerView(
                             video = currentVideoPlaying,
@@ -313,6 +369,14 @@ fun NovaPlayerApp(
                             },
                             onClose = {
                                 viewModel.playerManager.stopAndDismiss()
+                            }
+                        )
+                    } else if (currentSongPlaying != null) {
+                        // Floating MiniAudioPlayer bar when playing music
+                        MiniAudioPlayerBar(
+                            audioPlayerManager = viewModel.audioPlayerManager,
+                            onExpand = {
+                                viewModel.audioPlayerManager.openFullPlayer()
                             }
                         )
                     }
@@ -452,6 +516,9 @@ fun NovaPlayerApp(
                                 selectedFolder = selectedFolder,
                                 currentPlayingVideoId = currentVideoPlaying?.id,
                                 isPlaying = isPlaying,
+                                currentPosMs = currentPosMs,
+                                durationMs = durationMs,
+                                currentPlayingVideo = currentVideoPlaying,
                                 onSelectFolder = { viewModel.selectFolder(it) },
                                 onPlayVideo = { video, playlist ->
                                     viewModel.playerManager.playVideo(video, playlist)
@@ -482,22 +549,26 @@ fun NovaPlayerApp(
                                 onShowVideoInfo = { infoVideo = it }
                             )
 
-                            4 -> OnlineStreamScreen(
-                                onlineVideos = onlineVideos,
-                                onPlayOnlineVideo = { video, playlist ->
-                                    viewModel.playerManager.playVideo(video, playlist)
-                                    navController.navigate(Screen.Player.route)
+                            4 -> MusicScreen(
+                                songs = allSongs,
+                                playlists = audioPlaylists,
+                                currentPlayingSongId = currentSongPlaying?.id,
+                                isPlaying = isAudioPlaying,
+                                onPlaySong = { song, queue ->
+                                    viewModel.audioPlayerManager.playSong(song, queue)
                                 },
-                                onAddAndPlay = { title, url ->
-                                    viewModel.addOnlineVideo(title, url) { created ->
-                                        viewModel.playerManager.playVideo(created)
-                                        navController.navigate(Screen.Player.route)
+                                onToggleFavorite = { viewModel.toggleFavoriteSong(it) },
+                                onAddToPlaylist = { song ->
+                                    if (audioPlaylists.isNotEmpty()) {
+                                        viewModel.addSongToAudioPlaylist(audioPlaylists.first().id, song)
+                                        Toast.makeText(context, "Added to playlist", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        viewModel.createAudioPlaylist("My Music Playlist")
                                     }
                                 },
-                                onToggleFavorite = { viewModel.toggleFavorite(it) },
-                                onAddToPlaylist = { videoToAddToPlaylist = it },
-                                onShowVideoInfo = { infoVideo = it },
-                                onDeleteVideo = { requestDeleteVideo(it) }
+                                onCreatePlaylist = { name ->
+                                    viewModel.createAudioPlaylist(name)
+                                }
                             )
                         }
                     }
@@ -637,6 +708,13 @@ fun NovaPlayerApp(
         VideoInfoBottomSheet(
             video = video,
             onDismiss = { infoVideo = null }
+        )
+    }
+
+    if (isFullPlayerOpen && currentSongPlaying != null) {
+        FullMusicPlayerBottomSheet(
+            audioPlayerManager = viewModel.audioPlayerManager,
+            onDismiss = { viewModel.audioPlayerManager.closeFullPlayer() }
         )
     }
 }

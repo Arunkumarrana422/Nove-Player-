@@ -53,6 +53,9 @@ fun FoldersScreen(
     selectedFolder: VideoFolder?,
     currentPlayingVideoId: String? = null,
     isPlaying: Boolean = false,
+    currentPosMs: Long = 0L,
+    durationMs: Long = 0L,
+    currentPlayingVideo: Video? = null,
     onSelectFolder: (VideoFolder?) -> Unit,
     onPlayVideo: (Video, List<Video>) -> Unit,
     onToggleFavorite: (Video) -> Unit,
@@ -75,7 +78,7 @@ fun FoldersScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
@@ -88,6 +91,8 @@ fun FoldersScreen(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
+
+                Spacer(modifier = Modifier.width(4.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -111,7 +116,7 @@ fun FoldersScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = NovaPrimary),
                     shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -119,10 +124,12 @@ fun FoldersScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(4.dp))
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 90.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(selectedFolder.videos, key = { it.id }) { video ->
                     VideoCard(
@@ -150,13 +157,18 @@ fun FoldersScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .testTag("folders_screen"),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 90.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(folders, key = { it.name }) { folder ->
+                    val isFolderPlaying = isPlaying && folder.videos.any { it.id == currentPlayingVideoId }
                     FolderCard(
                         folder = folder,
-                        onClick = { onSelectFolder(folder) }
+                        onClick = { onSelectFolder(folder) },
+                        isCurrentlyPlaying = isFolderPlaying,
+                        playingVideoTitle = if (isFolderPlaying) currentPlayingVideo?.title else null,
+                        playingPosMs = if (isFolderPlaying) currentPosMs else 0L,
+                        playingDurMs = if (isFolderPlaying) durationMs else 0L
                     )
                 }
             }

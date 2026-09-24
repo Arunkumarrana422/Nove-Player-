@@ -3,16 +3,20 @@ package com.example.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.repository.MusicRepository
 import com.example.data.repository.SettingsRepository
 import com.example.data.repository.UserSettings
 import com.example.data.repository.VideoRepository
 import com.example.domain.model.AspectRatioMode
+import com.example.domain.model.AudioPlaylist
 import com.example.domain.model.Playlist
+import com.example.domain.model.Song
 import com.example.domain.model.SortOption
 import com.example.domain.model.ThemePreference
 import com.example.domain.model.Video
 import com.example.domain.model.VideoFolder
 import com.example.domain.model.ViewMode
+import com.example.player.AudioPlayerManager
 import com.example.player.NovaPlayerManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,8 +31,10 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     val repository = VideoRepository(application)
+    val musicRepository = MusicRepository(application)
     val settingsRepository = SettingsRepository(application)
     val playerManager = NovaPlayerManager(application)
+    val audioPlayerManager = AudioPlayerManager(application)
 
     val userSettings: StateFlow<UserSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -52,6 +58,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val hasStoragePermission: StateFlow<Boolean> = _hasStoragePermission.asStateFlow()
 
     init {
+        // Stop video when audio starts playing
+        audioPlayerManager.onAudioStarted = {
+            if (playerManager.isPlaying.value) {
+                playerManager.pause()
+            }
+        }
+        audioPlayerManager.onToggleFavorite = { song ->
+            toggleFavoriteSong(song)
+        }
+
         viewModelScope.launch {
             repository.initializeDatabase()
             scanLibrary()
@@ -65,6 +81,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    val allSongs: StateFlow<List<Song>> = musicRepository.allSongsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    val audioPlaylists: StateFlow<List<AudioPlaylist>> = musicRepository.audioPlaylistsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     val allVideos: StateFlow<List<Video>> = combine(
         repository.getAllVideosFlow(),
@@ -155,8 +183,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isScanning.value = true
             repository.scanLocalVideos()
+            musicRepository.scanLocalMusic()
             _isScanning.value = false
         }
+    }
+
+    fun toggleFavoriteSong(song: Song) {
+        musicRepository.toggleFavorite(song)
+    }
+
+    fun createAudioPlaylist(name: String, description: String = "") {
+        musicRepository.createPlaylist(name, description)
+    }
+
+    fun addSongToAudioPlaylist(playlistId: Long, song: Song) {
+        musicRepository.addSongToPlaylist(playlistId, song)
+    }
+
+    fun removeSongFromAudioPlaylist(playlistId: Long, songId: String) {
+        musicRepository.removeSongFromPlaylist(playlistId, songId)
+    }
+
+    fun deleteAudioPlaylist(playlistId: Long) {
+        musicRepository.deletePlaylist(playlistId)
     }
 
     fun toggleFavorite(video: Video) {
@@ -292,5 +341,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         playerManager.release()
+        audioPlayerManager.release()
     }
 }

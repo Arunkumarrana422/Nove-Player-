@@ -4,6 +4,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -14,6 +16,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector?
     data object Videos : Screen("videos", "Videos", Icons.Default.VideoLibrary)
     data object Folders : Screen("folders", "Folders", Icons.Default.Folder)
     data object Playlists : Screen("playlists", "Playlists", Icons.Default.PlaylistPlay)
+    data object Music : Screen("music", "Music", Icons.Default.LibraryMusic)
     data object Online : Screen("online", "Network", Icons.Default.Language)
 
     data object Favorites : Screen("favorites", "Favorites")
@@ -29,5 +32,5 @@ val BottomNavItems = listOf(
     Screen.Videos,
     Screen.Folders,
     Screen.Playlists,
-    Screen.Online
+    Screen.Music
 )
