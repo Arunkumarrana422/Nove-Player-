@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import android.content.ContentUris
+import android.net.Uri
+import coil.compose.AsyncImage
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -292,17 +295,33 @@ fun FullMusicPlayerBottomSheet(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(100.dp)
-                                        .clip(CircleShape)
+                                        .size(110.dp)
+                                        .clip(RoundedCornerShape(16.dp))
                                         .background(Color.White.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.MusicNote,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(52.dp)
-                                    )
+                                    val albumArtUri = remember(pagerSong.albumId) {
+                                        ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), pagerSong.albumId)
+                                    }
+                                    var hasError by remember(pagerSong.id) { mutableStateOf(false) }
+
+                                    if (!hasError) {
+                                        AsyncImage(
+                                            model = albumArtUri,
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                            onError = { hasError = true }
+                                        )
+                                    }
+                                    if (hasError) {
+                                        Icon(
+                                            imageVector = Icons.Default.MusicNote,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(52.dp)
+                                        )
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(20.dp))
                                 Text(

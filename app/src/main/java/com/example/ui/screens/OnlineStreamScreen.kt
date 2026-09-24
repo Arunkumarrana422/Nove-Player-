@@ -78,7 +78,7 @@ fun OnlineStreamScreen(
         modifier = Modifier
             .fillMaxSize()
             .testTag("online_stream_screen"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 90.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Direct URL Input Card
