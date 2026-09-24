@@ -412,27 +412,33 @@ fun PlayerScreen(
                                 totalDragY += dragAmount.y
 
                                 val totalMoveSq = totalDragX * totalDragX + totalDragY * totalDragY
-                                if (totalMoveSq > 3600f) {
-                                    if (isLongPressActive) {
-                                        isLongPressActive = false
-                                        playerManager.setSpeed(originalSpeed)
-                                        hudState = GestureHudState.None
-                                    }
-                                    if (!isDragging) {
-                                        isDragging = true
-                                        isDragHorizontal = kotlin.math.abs(totalDragX) > kotlin.math.abs(totalDragY)
-                                    }
+                                val duration = System.currentTimeMillis() - startTime
+
+                                if (isLongPressActive) {
+                                    change.consume()
                                 } else {
-                                    val duration = System.currentTimeMillis() - startTime
-                                    if (!isLongPressActive && !isDragging && duration > 100) {
+                                    if (!isDragging && duration > 100 && totalMoveSq < 4900f) {
                                         isLongPressActive = true
                                         originalSpeed = playbackSpeed
                                         playerManager.setSpeed(2.0f)
                                         hudState = GestureHudState.SpeedBoost(2.0f)
+                                        change.consume()
+                                    } else if (totalMoveSq > 4900f) {
+                                        if (isLongPressActive) {
+                                            isLongPressActive = false
+                                            playerManager.setSpeed(originalSpeed)
+                                            hudState = GestureHudState.None
+                                        }
+                                        if (!isDragging) {
+                                            isDragging = true
+                                            isDragHorizontal = kotlin.math.abs(totalDragX) > kotlin.math.abs(totalDragY)
+                                        }
                                     }
                                 }
 
-                                if (isDragging) {
+                                if (isLongPressActive) {
+                                    change.consume()
+                                } else if (isDragging) {
                                     change.consume()
                                     if (isDragHorizontal && settings.swipeSeekEnabled) {
                                         isSeekingGesture = true
