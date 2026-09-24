@@ -136,6 +136,7 @@ fun FoldersScreen(
                         video = video,
                         onClick = { onPlayVideo(video, selectedFolder.videos) },
                         isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
+                        currentPosMs = currentPosMs,
                         onToggleFavorite = { onToggleFavorite(video) },
                         onAddToPlaylist = { onAddToPlaylist(video) },
                         onShowInfo = { onShowVideoInfo(video) },

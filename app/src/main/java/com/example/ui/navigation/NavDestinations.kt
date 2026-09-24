@@ -31,6 +31,5 @@ val BottomNavItems = listOf(
     Screen.Home,
     Screen.Videos,
     Screen.Folders,
-    Screen.Playlists,
-    Screen.Music
+    Screen.Playlists
 )

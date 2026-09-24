@@ -338,7 +338,6 @@ fun NovaPlayerApp(
                     1 -> "Video Library"
                     2 -> "Folders"
                     3 -> "Playlists"
-                    4 -> "Music Player"
                     else -> "Nova Player"
                 }
                 NovaAppBar(
@@ -480,8 +479,8 @@ fun NovaPlayerApp(
                                     viewModel.playerManager.playVideo(video, playlist)
                                     navController.navigate(Screen.Player.route)
                                 },
-                                onOpenStreamDialog = {
-                                    coroutineScope.launch { pagerState.animateScrollToPage(4) }
+                                onNavigateToMusic = {
+                                    navController.navigate(Screen.Music.route)
                                 },
                                 onNavigateToVideos = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(1) }
@@ -507,6 +506,7 @@ fun NovaPlayerApp(
                                 isScanning = isScanning,
                                 currentPlayingVideoId = currentVideoPlaying?.id,
                                 isPlaying = isPlaying,
+                                currentPosMs = currentPosMs,
                                 onSortChange = { viewModel.setSortOption(it) },
                                 onViewModeChange = { viewModel.setViewMode(it) },
                                 onRefresh = { viewModel.scanLibrary() },

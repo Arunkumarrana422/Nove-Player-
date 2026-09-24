@@ -26,7 +26,7 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Videocam
@@ -73,7 +73,7 @@ fun HomeScreen(
     currentPlayingVideoId: String? = null,
     isPlaying: Boolean = false,
     onPlayVideo: (Video, List<Video>) -> Unit,
-    onOpenStreamDialog: () -> Unit,
+    onNavigateToMusic: () -> Unit,
     onNavigateToVideos: () -> Unit,
     onNavigateToFolders: () -> Unit,
     onNavigateToPlaylists: () -> Unit,
@@ -99,10 +99,10 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 QuickActionButton(
-                    icon = Icons.Default.Language,
-                    label = "Online Stream",
+                    icon = Icons.Default.LibraryMusic,
+                    label = "Music Player",
                     gradient = listOf(NovaPrimary, NovaSecondary),
-                    onClick = onOpenStreamDialog,
+                    onClick = onNavigateToMusic,
                     modifier = Modifier.weight(1f)
                 )
                 QuickActionButton(

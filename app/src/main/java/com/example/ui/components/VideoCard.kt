@@ -126,6 +126,7 @@ fun VideoCard(
     video: Video,
     onClick: () -> Unit,
     isCurrentlyPlaying: Boolean = false,
+    currentPosMs: Long = 0L,
     onToggleFavorite: () -> Unit = {},
     onAddToPlaylist: () -> Unit = {},
     onShowInfo: () -> Unit = {},
@@ -332,8 +333,9 @@ fun VideoCard(
 
                 if (isCurrentlyPlaying) {
                     Spacer(modifier = Modifier.height(3.dp))
+                    val displayPos = if (currentPosMs > 0L) currentPosMs else video.lastPositionMs
                     Text(
-                        text = "${Video.formatDuration(video.lastPositionMs)} / ${video.durationFormatted}",
+                        text = "${Video.formatDuration(displayPos)} / ${video.durationFormatted}",
                         style = MaterialTheme.typography.bodySmall,
                         color = NovaAccent,
                         fontSize = 11.sp,
