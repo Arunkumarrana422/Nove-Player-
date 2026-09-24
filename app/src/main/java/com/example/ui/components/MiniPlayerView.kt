@@ -72,10 +72,10 @@ fun MiniPlayerView(
             val progressFraction = if (durationMs > 0) (currentPosMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
 
             Card(
+                onClick = onExpand,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 6.dp)
-                    .clickable(onClick = onExpand)
                     .testTag("mini_player_bar"),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(

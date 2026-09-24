@@ -243,14 +243,18 @@ fun VideoCard(
                 }
 
                 // Playback progress bar at bottom of thumbnail
-                if (video.lastPositionMs > 0) {
+                val activePos = if (isCurrentlyPlaying) currentPosMs else video.lastPositionMs
+                val activeDuration = if (isCurrentlyPlaying && video.durationMs > 0) video.durationMs else video.durationMs
+                val effectiveProgress = if (activeDuration > 0) (activePos.toFloat() / activeDuration.toFloat()).coerceIn(0f, 1f) else video.progressFraction
+
+                if (activePos > 0 || isCurrentlyPlaying) {
                     LinearProgressIndicator(
-                        progress = { video.progressFraction },
+                        progress = { effectiveProgress },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(3.5.dp)
                             .align(Alignment.BottomCenter),
-                        color = if (isPartiallyWatched) HalfWatchedColor else NovaAccent,
+                        color = NovaAccent,
                         trackColor = Color(0x66FFFFFF),
                     )
                 }
