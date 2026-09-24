@@ -49,6 +49,8 @@ class NovaPlayerManager(private val context: Context) {
             }
     }
 
+    var onVideoStarted: (() -> Unit)? = null
+
     private val _currentVideo = MutableStateFlow<Video?>(null)
     val currentVideo: StateFlow<Video?> = _currentVideo.asStateFlow()
 
@@ -160,6 +162,7 @@ class NovaPlayerManager(private val context: Context) {
     }
 
     fun playVideo(video: Video, playlist: List<Video> = emptyList(), startPositionMs: Long = 0L) {
+        onVideoStarted?.invoke()
         _errorMessage.value = null
         _currentVideo.value = video
         val actualList = if (playlist.isNotEmpty()) playlist else listOf(video)

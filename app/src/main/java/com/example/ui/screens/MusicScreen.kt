@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Sort
+import com.example.ui.components.CreatePlaylistDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -137,6 +138,7 @@ fun MusicScreen(
     var selectedAlbum by remember { mutableStateOf<AudioAlbum?>(null) }
     var selectedArtist by remember { mutableStateOf<AudioArtist?>(null) }
     var selectedPlaylist by remember { mutableStateOf<AudioPlaylist?>(null) }
+    var showCreatePlaylistDialog by remember { mutableStateOf(false) }
 
     // Filtered and sorted songs
     val filteredSongs = remember(songs, searchQuery, currentSort) {
@@ -182,6 +184,16 @@ fun MusicScreen(
             val totalDur = list.sumOf { it.durationMs }
             AudioFolder(name = folder, path = path, songCount = list.size, totalDurationMs = totalDur, songs = list)
         }.sortedByDescending { it.songCount }
+    }
+
+    if (showCreatePlaylistDialog) {
+        CreatePlaylistDialog(
+            onDismiss = { showCreatePlaylistDialog = false },
+            onCreate = { name, desc ->
+                onCreatePlaylist(name)
+                showCreatePlaylistDialog = false
+            }
+        )
     }
 
     // Handle Sub-screen Detail Views with BackHandler for phone hardware back button
@@ -592,57 +604,85 @@ fun MusicScreen(
                 }
 
                 4 -> { // Playlists
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 120.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(playlists, key = { it.id }) { pl ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        val playlistObj = AudioPlaylist(id = pl.id, name = pl.name, description = pl.description, songs = pl.songs, songCount = pl.songCount)
-                                        selectedPlaylist = playlistObj
-                                    },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Button(
+                                onClick = { showCreatePlaylistDialog = true },
+                                modifier = Modifier.fillMaxWidth().testTag("create_playlist_btn"),
+                                colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
+                                Icon(Icons.Default.PlaylistAdd, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Create New Playlist", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        if (playlists.isEmpty()) {
+                            EmptyStateView(
+                                icon = Icons.Default.PlaylistPlay,
+                                title = "No Playlists",
+                                description = "Create your custom playlists to organize your favorite music."
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                items(playlists, key = { it.id }) { pl ->
+                                    Card(
                                         modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(
-                                                Brush.linearGradient(listOf(NovaSecondary, NovaAccent))
-                                            ),
-                                        contentAlignment = Alignment.Center
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                val playlistObj = AudioPlaylist(id = pl.id, name = pl.name, description = pl.description, songs = pl.songs, songCount = pl.songCount)
+                                                selectedPlaylist = playlistObj
+                                            },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                     ) {
-                                        Icon(Icons.Default.PlaylistPlay, contentDescription = null, tint = Color.White)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(
+                                                        Brush.linearGradient(listOf(NovaSecondary, NovaAccent))
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(Icons.Default.PlaylistPlay, contentDescription = null, tint = Color.White)
+                                            }
+                                            Spacer(modifier = Modifier.width(14.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = pl.name,
+                                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Text(
+                                                    text = "${pl.songCount} tracks • ${pl.description.ifBlank { "Custom Playlist" }}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
                                     }
-                                    Spacer(modifier = Modifier.width(14.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = pl.name,
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "${pl.songCount} tracks • ${pl.description.ifBlank { "Custom Playlist" }}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(16.dp)
-                                    )
                                 }
                             }
                         }

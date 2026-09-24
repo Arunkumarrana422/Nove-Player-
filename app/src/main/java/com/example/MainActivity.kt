@@ -571,6 +571,7 @@ fun NovaPlayerApp(
                         isPlaying = isAudioPlaying,
                         onPlaySong = { song, queue ->
                             viewModel.audioPlayerManager.playSong(song, queue)
+                            viewModel.audioPlayerManager.openFullPlayer()
                         },
                         onToggleFavorite = { viewModel.toggleFavoriteSong(it) },
                         onAddToPlaylist = { song ->

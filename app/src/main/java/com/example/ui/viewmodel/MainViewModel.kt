@@ -64,6 +64,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 playerManager.pause()
             }
         }
+        // Stop audio when video starts playing
+        playerManager.onVideoStarted = {
+            if (audioPlayerManager.isPlaying.value) {
+                audioPlayerManager.pause()
+            }
+        }
         audioPlayerManager.onToggleFavorite = { song ->
             toggleFavoriteSong(song)
         }
