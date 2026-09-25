@@ -173,6 +173,7 @@ fun PlayerScreen(
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
             insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             insetsController.hide(WindowInsetsCompat.Type.systemBars())
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
         // Apply saved video player brightness
         playerManager.applyPlayerBrightness(activity)
@@ -182,6 +183,7 @@ fun PlayerScreen(
             if (win != null) {
                 val insetsController = WindowCompat.getInsetsController(win, win.decorView)
                 insetsController.show(WindowInsetsCompat.Type.systemBars())
+                win.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 // Restore phone's automatic / default system brightness
                 playerManager.restoreSystemBrightness(activity)
