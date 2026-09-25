@@ -61,6 +61,7 @@ import com.example.ui.components.PlayerControlsOverlay
 import com.example.ui.components.SubtitleOverlay
 import com.example.ui.components.SubtitleSettingsBottomSheet
 import com.example.ui.theme.NovaPrimary
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -290,6 +291,7 @@ fun PlayerScreen(
                         return@pointerInput
                     }
 
+                    var pendingSingleTapJob: Job? = null
                     var lastTapTime = 0L
                     var lastTapOffset = Offset.Zero
 
@@ -305,6 +307,7 @@ fun PlayerScreen(
                         var isLongPressActive = false
                         var originalSpeed = 1f
                         val isLeft = startPos.x < size.width / 2
+                        var anyPointerConsumed = firstDown.isConsumed
 
                         var previousCentroid = Offset.Zero
                         var previousDistance = 0f
@@ -312,6 +315,10 @@ fun PlayerScreen(
                         while (true) {
                             val event = awaitPointerEvent()
                             val activePointers = event.changes.filter { it.pressed }
+
+                            if (!isDragging && !isMultiTouch && !isLongPressActive && event.changes.any { it.isConsumed }) {
+                                anyPointerConsumed = true
+                            }
 
                             if (activePointers.isEmpty()) {
                                 // All fingers lifted
@@ -335,7 +342,7 @@ fun PlayerScreen(
                                         playerManager.setSpeed(settings.defaultSpeed)
                                         hudState = GestureHudState.None
                                     }
-                                } else {
+                                } else if (!anyPointerConsumed) {
                                     // Check if it was a Tap or Double Tap
                                     val duration = System.currentTimeMillis() - startTime
                                     val moveDistSq = totalDragX * totalDragX + totalDragY * totalDragY
@@ -345,8 +352,15 @@ fun PlayerScreen(
                                         val distFromLastTap = (startPos - lastTapOffset).getDistance()
 
                                         if (timeSinceLastTap < 350 && distFromLastTap < 120f) {
-                                            // Double Tap
+                                            // Double Tap detected:
+                                            // Cancel pending single tap immediately so player buttons NEVER appear
+                                            pendingSingleTapJob?.cancel()
+                                            pendingSingleTapJob = null
                                             lastTapTime = 0L
+
+                                            // Keep controls hidden during double-tap seek
+                                            areControlsVisible = false
+
                                             if (zoomScale > 1.05f) {
                                                 zoomScale = 1f
                                                 panOffsetX = 0f
@@ -363,10 +377,15 @@ fun PlayerScreen(
                                                 hudState = GestureHudState.DoubleTapSeek(isRightSide, settings.doubleTapSeekSeconds)
                                             }
                                         } else {
-                                            // Single Tap
+                                            // Single Tap candidate:
+                                            // Wait 280ms before toggling controls so double tap has time to be detected
                                             lastTapTime = now
                                             lastTapOffset = startPos
-                                            areControlsVisible = !areControlsVisible
+                                            pendingSingleTapJob?.cancel()
+                                            pendingSingleTapJob = scope.launch {
+                                                delay(280L)
+                                                areControlsVisible = !areControlsVisible
+                                            }
                                         }
                                     }
                                 }
