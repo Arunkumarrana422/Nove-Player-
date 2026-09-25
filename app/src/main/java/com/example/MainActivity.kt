@@ -192,7 +192,7 @@ class MainActivity : ComponentActivity() {
         if (intent?.action == Intent.ACTION_VIEW) {
             val uri: Uri? = intent.data
             if (uri != null) {
-                val videoTitle = uri.lastPathSegment ?: "External Video"
+                val videoTitle = getDisplayNameFromUri(this, uri)
                 val video = Video(
                     id = uri.toString(),
                     title = videoTitle,
@@ -209,6 +209,51 @@ class MainActivity : ComponentActivity() {
                 viewModel.playerManager.playVideo(video)
             }
         }
+    }
+
+    private fun getDisplayNameFromUri(context: Context, uri: Uri): String {
+        var displayName: String? = null
+        if (uri.scheme == "content") {
+            try {
+                context.contentResolver.query(
+                    uri,
+                    arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+                    null,
+                    null,
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex != -1) {
+                            displayName = cursor.getString(nameIndex)
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        if (displayName.isNullOrBlank()) {
+            displayName = uri.lastPathSegment
+        }
+        if (displayName.isNullOrBlank() || displayName == "media" || displayName!!.matches(Regex("^\\d+$"))) {
+            try {
+                val projection = arrayOf(android.provider.MediaStore.Video.Media.DISPLAY_NAME)
+                context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.DISPLAY_NAME)
+                        if (idx != -1) {
+                            displayName = cursor.getString(idx)
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        if (displayName.isNullOrBlank() || displayName == "media" || displayName!!.matches(Regex("^\\d+$"))) {
+            displayName = uri.path?.let { path ->
+                val lastSlash = path.lastIndexOf('/')
+                if (lastSlash != -1 && lastSlash < path.length - 1) path.substring(lastSlash + 1) else null
+            } ?: "External Video"
+        }
+        return displayName!!
     }
 
     private fun checkAndRequestPermissions() {
