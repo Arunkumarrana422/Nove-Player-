@@ -248,38 +248,23 @@ fun PlayerControlsOverlay(
                 }
             }
 
-            // CENTER PLAYBACK CONTROLS
+            // CENTER PLAYBACK CONTROLS: [PREVIOUS]  [PLAY/PAUSE]  [NEXT]
             Row(
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                    .align(Alignment.Center),
+                horizontalArrangement = Arrangement.spacedBy(48.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Previous
                 IconButton(
                     onClick = onPrevious,
-                    modifier = Modifier.size(48.dp).testTag("player_prev_btn")
+                    modifier = Modifier.size(56.dp).testTag("player_prev_btn")
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipPrevious,
                         contentDescription = "Previous",
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                // Rewind 10s
-                IconButton(
-                    onClick = { onSeekDelta(-10000L) },
-                    modifier = Modifier.size(52.dp).testTag("player_rewind_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FastRewind,
-                        contentDescription = "Rewind 10s",
-                        tint = Color.White,
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(38.dp)
                     )
                 }
 
@@ -307,29 +292,16 @@ fun PlayerControlsOverlay(
                     }
                 }
 
-                // Fast Forward 10s
-                IconButton(
-                    onClick = { onSeekDelta(10000L) },
-                    modifier = Modifier.size(52.dp).testTag("player_ffwd_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FastForward,
-                        contentDescription = "Fast Forward 10s",
-                        tint = Color.White,
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
-
                 // Next
                 IconButton(
                     onClick = onNext,
-                    modifier = Modifier.size(48.dp).testTag("player_next_btn")
+                    modifier = Modifier.size(56.dp).testTag("player_next_btn")
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipNext,
                         contentDescription = "Next",
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(38.dp)
                     )
                 }
             }
