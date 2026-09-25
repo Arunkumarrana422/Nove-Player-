@@ -24,6 +24,7 @@ import com.example.domain.model.AspectRatioMode
 import com.example.domain.model.AudioTrack
 import com.example.domain.model.SubtitleTrack
 import com.example.domain.model.Video
+import com.example.data.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -343,6 +344,11 @@ class NovaPlayerManager(private val context: Context) {
     fun setBrightness(fraction: Float, activity: Activity? = null) {
         val clamped = fraction.coerceIn(0.01f, 1.0f)
         _brightnessFraction.value = clamped
+        scope.launch {
+            try {
+                SettingsRepository(context).setVideoBrightness(clamped)
+            } catch (_: Exception) {}
+        }
         activity?.let {
             val lp = it.window.attributes
             lp.screenBrightness = clamped

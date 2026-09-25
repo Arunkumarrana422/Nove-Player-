@@ -37,7 +37,8 @@ data class UserSettings(
     val backgroundAudioEnabled: Boolean = true,
     val hardwareDecoderEnabled: Boolean = true,
     val saveHistory: Boolean = true,
-    val onboardingCompleted: Boolean = false
+    val onboardingCompleted: Boolean = false,
+    val videoBrightness: Float = 0.7f
 )
 
 class SettingsRepository(private val context: Context) {
@@ -61,6 +62,7 @@ class SettingsRepository(private val context: Context) {
         private val KEY_HW_DECODER = booleanPreferencesKey("hw_decoder")
         private val KEY_SAVE_HISTORY = booleanPreferencesKey("save_history")
         private val KEY_ONBOARDING = booleanPreferencesKey("onboarding_completed")
+        private val KEY_VIDEO_BRIGHTNESS = floatPreferencesKey("video_brightness")
     }
 
     val settingsFlow: Flow<UserSettings> = context.dataStore.data.map { prefs ->
@@ -99,7 +101,8 @@ class SettingsRepository(private val context: Context) {
             backgroundAudioEnabled = prefs[KEY_BG_AUDIO] ?: true,
             hardwareDecoderEnabled = prefs[KEY_HW_DECODER] ?: true,
             saveHistory = prefs[KEY_SAVE_HISTORY] ?: true,
-            onboardingCompleted = prefs[KEY_ONBOARDING] ?: false
+            onboardingCompleted = prefs[KEY_ONBOARDING] ?: false,
+            videoBrightness = prefs[KEY_VIDEO_BRIGHTNESS] ?: 0.7f
         )
     }
 
@@ -176,5 +179,9 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { it[KEY_ONBOARDING] = completed }
+    }
+
+    suspend fun setVideoBrightness(brightness: Float) {
+        context.dataStore.edit { it[KEY_VIDEO_BRIGHTNESS] = brightness }
     }
 }

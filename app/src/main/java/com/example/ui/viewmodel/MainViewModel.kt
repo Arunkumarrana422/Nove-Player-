@@ -331,6 +331,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setHardwareDecoder(enabled: Boolean) = viewModelScope.launch { settingsRepository.setHardwareDecoder(enabled) }
     fun setSaveHistory(save: Boolean) = viewModelScope.launch { settingsRepository.setSaveHistory(save) }
     fun setOnboardingCompleted(completed: Boolean) = viewModelScope.launch { settingsRepository.setOnboardingCompleted(completed) }
+    fun setVideoBrightness(brightness: Float) = viewModelScope.launch { settingsRepository.setVideoBrightness(brightness) }
 
     private fun sortVideos(list: List<Video>, sortOption: SortOption): List<Video> {
         return when (sortOption) {

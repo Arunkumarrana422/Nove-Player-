@@ -117,6 +117,7 @@ fun PlayerScreen(
         zoomScale = 1f
         panOffsetX = 0f
         panOffsetY = 0f
+        playerManager.setBrightness(settings.videoBrightness, activity)
     }
 
     // Continue from where you stopped banner state
