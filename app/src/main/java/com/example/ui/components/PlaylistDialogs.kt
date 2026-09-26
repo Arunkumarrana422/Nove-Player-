@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -417,10 +418,11 @@ fun AddSongsScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 2.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) NovaPrimary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
-                        )
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        border = if (isSelected) BorderStroke(2.dp, NovaPrimary) else null
                     ) {
                         Row(
                             modifier = Modifier
@@ -585,10 +587,11 @@ fun AddVideosScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 2.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) NovaPrimary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
-                        )
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        border = if (isSelected) BorderStroke(2.dp, NovaPrimary) else null
                     ) {
                         Row(
                             modifier = Modifier
