@@ -14,7 +14,9 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -229,8 +231,16 @@ fun PlayerScreen(
                     scaleY = zoomScale
                     translationX = panOffsetX
                     translationY = panOffsetY
-                }
+                },
+            contentAlignment = Alignment.Center
         ) {
+            val viewModifier = when (aspectRatioMode) {
+                AspectRatioMode.FIT, AspectRatioMode.FILL_CROP, AspectRatioMode.STRETCH, AspectRatioMode.ORIGINAL -> Modifier.fillMaxSize()
+                AspectRatioMode.RATIO_16_9 -> Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                AspectRatioMode.RATIO_4_3 -> Modifier.fillMaxWidth().aspectRatio(4f / 3f)
+                AspectRatioMode.RATIO_21_9 -> Modifier.fillMaxWidth().aspectRatio(21f / 9f)
+            }
+
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
@@ -255,7 +265,7 @@ fun PlayerScreen(
                         AspectRatioMode.RATIO_21_9 -> AspectRatioFrameLayout.RESIZE_MODE_FIT
                     }
                 },
-                modifier = Modifier.fillMaxSize()
+                modifier = viewModifier
             )
         }
 
