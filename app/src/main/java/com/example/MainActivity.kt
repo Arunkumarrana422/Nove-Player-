@@ -78,6 +78,7 @@ import com.example.ui.components.AddToPlaylistDialog
 import com.example.ui.components.CreatePlaylistDialog
 import com.example.ui.components.DeleteVideoDialog
 import com.example.ui.components.FullMusicPlayerBottomSheet
+import com.example.ui.components.IosMusicWidgetView
 import com.example.ui.components.MiniAudioPlayerBar
 import com.example.ui.components.MiniPlayerView
 import com.example.ui.components.NovaAppBar
@@ -472,8 +473,8 @@ fun NovaPlayerApp(
                             }
                         )
                     } else if (currentSongPlaying != null) {
-                        // Floating MiniAudioPlayer bar when playing music
-                        MiniAudioPlayerBar(
+                        // iOS Style Music Player Widget when playing music
+                        IosMusicWidgetView(
                             audioPlayerManager = viewModel.audioPlayerManager,
                             onExpand = {
                                 viewModel.audioPlayerManager.openFullPlayer()
