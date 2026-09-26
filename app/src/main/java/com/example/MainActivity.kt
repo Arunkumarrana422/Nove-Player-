@@ -841,31 +841,36 @@ fun NovaPlayerApp(
         )
     }
 
-    // Animated Pill Toast Overlay across the entire app
+    // Animated Pill Toast Overlay just below header
     val toastMsg by viewModel.toastMessage.collectAsState()
+    val isDark = isSystemInDarkTheme()
+    val toastBg = if (isDark) Color(0xEE1E2230) else Color(0xEEF2F4F8)
+    val toastTextColor = if (isDark) Color.White else Color(0xFF1A1D24)
+    val toastBorderColor = if (isDark) NovaAccent.copy(alpha = 0.5f) else NovaAccent.copy(alpha = 0.4f)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(bottom = if (showBottomBar && currentVideoPlaying != null) 140.dp else 80.dp),
-        contentAlignment = Alignment.BottomCenter
+            .padding(top = 76.dp, start = 16.dp, end = 16.dp),
+        contentAlignment = Alignment.TopCenter
     ) {
         AnimatedVisibility(
             visible = toastMsg != null,
-            enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn() + scaleIn(initialScale = 0.9f),
-            exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut() + scaleOut(targetScale = 0.9f)
+            enter = slideInVertically(initialOffsetY = { -it / 2 }) + fadeIn() + scaleIn(initialScale = 0.9f),
+            exit = slideOutVertically(targetOffsetY = { -it / 2 }) + fadeOut() + scaleOut(targetScale = 0.9f)
         ) {
             if (toastMsg != null) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(Color(0xEE0B1020))
-                        .border(1.dp, NovaAccent.copy(alpha = 0.6f), RoundedCornerShape(50))
+                        .background(toastBg)
+                        .border(1.dp, toastBorderColor, RoundedCornerShape(50))
                         .padding(horizontal = 24.dp, vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = toastMsg ?: "",
-                        color = Color.White,
+                        color = toastTextColor,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
