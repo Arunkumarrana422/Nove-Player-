@@ -396,31 +396,23 @@ fun PlayerScreen(
                                             pendingSingleTapJob = null
                                             areControlsVisible = false
 
-                                            if (zoomScale > 1.05f) {
-                                                zoomScale = 1f
-                                                panOffsetX = 0f
-                                                panOffsetY = 0f
-                                                hudState = GestureHudState.Zoom(1f)
+                                            isDoubleTapSequenceActive = true
+                                            doubleTapSequenceSideIsRight = isRightSide
+                                            val seekStep = settings.doubleTapSeekSeconds
+                                            cumulativeDoubleTapSeconds = seekStep
+                                            val seekDeltaMs = if (isRightSide) seekStep * 1000L else -seekStep * 1000L
+                                            playerManager.seekBy(seekDeltaMs)
+                                            hudState = GestureHudState.DoubleTapSeek(isRightSide, cumulativeDoubleTapSeconds)
+
+                                            lastTapTime = now
+                                            lastTapOffset = startPos
+
+                                            doubleTapResetJob?.cancel()
+                                            doubleTapResetJob = scope.launch {
+                                                delay(800L)
+                                                isDoubleTapSequenceActive = false
+                                                cumulativeDoubleTapSeconds = 0
                                                 lastTapTime = 0L
-                                            } else {
-                                                isDoubleTapSequenceActive = true
-                                                doubleTapSequenceSideIsRight = isRightSide
-                                                val seekStep = settings.doubleTapSeekSeconds
-                                                cumulativeDoubleTapSeconds = seekStep
-                                                val seekDeltaMs = if (isRightSide) seekStep * 1000L else -seekStep * 1000L
-                                                playerManager.seekBy(seekDeltaMs)
-                                                hudState = GestureHudState.DoubleTapSeek(isRightSide, cumulativeDoubleTapSeconds)
-
-                                                lastTapTime = now
-                                                lastTapOffset = startPos
-
-                                                doubleTapResetJob?.cancel()
-                                                doubleTapResetJob = scope.launch {
-                                                    delay(800L)
-                                                    isDoubleTapSequenceActive = false
-                                                    cumulativeDoubleTapSeconds = 0
-                                                    lastTapTime = 0L
-                                                }
                                             }
                                         } else {
                                             // Single Tap candidate:
