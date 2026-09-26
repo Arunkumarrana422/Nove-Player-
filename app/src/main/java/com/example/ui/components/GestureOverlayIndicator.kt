@@ -3,6 +3,10 @@ package com.example.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,17 +62,19 @@ fun GestureOverlayIndicator(
     hudState: GestureHudState,
     modifier: Modifier = Modifier
 ) {
+    val isPillHud = hudState is GestureHudState.SpeedBoost || hudState is GestureHudState.Zoom
+
     AnimatedVisibility(
         visible = hudState !is GestureHudState.None,
-        enter = fadeIn(),
-        exit = fadeOut(),
+        enter = if (isPillHud) scaleIn(initialScale = 0.85f) + fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }) else fadeIn(),
+        exit = if (isPillHud) scaleOut(targetScale = 0.85f) + fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 }) else fadeOut(),
         modifier = modifier
     ) {
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
+                .clip(if (isPillHud) RoundedCornerShape(50) else RoundedCornerShape(8.dp))
                 .background(Color(0xEE0B1020))
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(horizontal = if (isPillHud) 14.dp else 16.dp, vertical = 6.dp),
             contentAlignment = Alignment.Center
         ) {
             when (hudState) {
@@ -189,14 +195,14 @@ fun GestureOverlayIndicator(
                             imageVector = Icons.Default.Speed,
                             contentDescription = null,
                             tint = NovaAccent,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "${hudState.speed}X SPEED",
                             color = Color.White,
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 16.sp
+                            fontSize = 13.sp
                         )
                     }
                 }
@@ -209,14 +215,14 @@ fun GestureOverlayIndicator(
                             imageVector = Icons.Default.ZoomIn,
                             contentDescription = null,
                             tint = NovaAccent,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = if (hudState.scale <= 1.02f) "FIT TO SCREEN" else "ZOOM: ${(hudState.scale * 100).toInt()}%",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
+                            fontSize = 13.sp
                         )
                     }
                 }
