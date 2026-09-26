@@ -287,7 +287,7 @@ fun MusicScreen(
                             Icon(Icons.Default.Clear, contentDescription = "Close search")
                         }
                     },
-                    modifier = Modifier.weight(1f).height(50.dp)
+                    modifier = Modifier.weight(1f)
                 )
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
