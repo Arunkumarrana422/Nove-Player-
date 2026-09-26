@@ -516,7 +516,7 @@ private fun FeaturedStreamCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "${video.videoCodec} • ${video.resolutionFormatted}",
+                    text = video.folderName,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp

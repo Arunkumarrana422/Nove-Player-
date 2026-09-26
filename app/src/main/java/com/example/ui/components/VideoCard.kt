@@ -308,31 +308,6 @@ fun VideoCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-
-                    if (video.sizeBytes > 0) {
-                        Text(
-                            text = "• ${video.sizeFormatted}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp
-                        )
-                    }
-
-                    if (video.width > 0) {
-                        Box(
-                            modifier = Modifier
-                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(3.dp))
-                                .padding(horizontal = 4.dp, vertical = 1.dp)
-                        ) {
-                            Text(
-                                text = video.resolutionFormatted,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
                 }
 
                 if (isCurrentlyPlaying) {

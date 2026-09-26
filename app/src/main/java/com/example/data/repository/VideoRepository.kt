@@ -200,21 +200,14 @@ class VideoRepository(private val context: Context) {
                     if (file.exists()) {
                         file.delete()
                     }
-                }
-                if (video.uri.isNotBlank()) {
-                    val uri = Uri.parse(video.uri)
                     try {
-                        context.contentResolver.delete(uri, null, null)
-                    } catch (e: android.app.RecoverableSecurityException) {
-                        onDeleteIntentSender(e.userAction.actionIntent.intentSender)
-                    } catch (e: Exception) {
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                            try {
-                                val request = android.provider.MediaStore.createDeleteRequest(context.contentResolver, listOf(uri))
-                                onDeleteIntentSender(request.intentSender)
-                            } catch (_: Exception) {}
-                        }
-                    }
+                        android.media.MediaScannerConnection.scanFile(
+                            context,
+                            arrayOf(video.path),
+                            null,
+                            null
+                        )
+                    } catch (_: Exception) {}
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
