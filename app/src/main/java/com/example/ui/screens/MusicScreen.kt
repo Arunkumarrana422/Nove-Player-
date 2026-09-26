@@ -570,9 +570,9 @@ fun MusicScreen(
                                         Box(
                                             modifier = Modifier
                                                 .size(48.dp)
-                                                .clip(RoundedCornerShape(10.dp))
+                                                .clip(CircleShape)
                                                 .background(
-                                                    Brush.linearGradient(listOf(NovaPrimary, NovaSecondary))
+                                                    Brush.linearGradient(listOf(NovaSecondary, NovaAccent))
                                                 ),
                                             contentAlignment = Alignment.Center
                                         ) {
@@ -655,7 +655,7 @@ fun MusicScreen(
                                             Box(
                                                 modifier = Modifier
                                                     .size(48.dp)
-                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .clip(CircleShape)
                                                     .background(
                                                         Brush.linearGradient(listOf(NovaSecondary, NovaAccent))
                                                     ),
@@ -1033,7 +1033,7 @@ fun PlaylistDetailScreen(
                 Button(
                     onClick = { onPlaySong(playlist.songs.first(), playlist.songs) },
                     colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = CircleShape,
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -1048,7 +1048,7 @@ fun PlaylistDetailScreen(
                             onPlaySong(shuffledSongs.first(), shuffledSongs)
                         }
                     },
-                    shape = RoundedCornerShape(10.dp),
+                    shape = CircleShape,
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))

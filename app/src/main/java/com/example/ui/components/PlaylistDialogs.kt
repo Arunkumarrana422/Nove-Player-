@@ -380,7 +380,10 @@ fun AddSongsScreen(
                     }
                 }
             ) {
-                Text(if (selectedSongIds.size == availableSongs.size) "Deselect All" else "Select All")
+                Text(
+                    text = if (selectedSongIds.size == availableSongs.size) "Deselect All" else "Select All",
+                    color = NovaAccent
+                )
             }
         }
 
@@ -422,7 +425,7 @@ fun AddSongsScreen(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
-                        border = if (isSelected) BorderStroke(2.dp, NovaPrimary) else null
+                        border = if (isSelected) BorderStroke(2.dp, NovaAccent) else null
                     ) {
                         Row(
                             modifier = Modifier
@@ -495,7 +498,7 @@ fun AddSongsScreen(
                 onAddSongs(songsToAdd)
             },
             enabled = selectedSongIds.isNotEmpty(),
-            colors = ButtonDefaults.buttonColors(containerColor = NovaPrimary),
+            colors = ButtonDefaults.buttonColors(containerColor = NovaAccent, contentColor = Color(0xFF0F172A)),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
@@ -549,7 +552,10 @@ fun AddVideosScreen(
                     }
                 }
             ) {
-                Text(if (selectedVideoIds.size == availableVideos.size) "Deselect All" else "Select All")
+                Text(
+                    text = if (selectedVideoIds.size == availableVideos.size) "Deselect All" else "Select All",
+                    color = NovaAccent
+                )
             }
         }
 
@@ -591,7 +597,7 @@ fun AddVideosScreen(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
-                        border = if (isSelected) BorderStroke(2.dp, NovaPrimary) else null
+                        border = if (isSelected) BorderStroke(2.dp, NovaAccent) else null
                     ) {
                         Row(
                             modifier = Modifier
@@ -646,7 +652,7 @@ fun AddVideosScreen(
                 onAddVideos(videosToAdd)
             },
             enabled = selectedVideoIds.isNotEmpty(),
-            colors = ButtonDefaults.buttonColors(containerColor = NovaPrimary),
+            colors = ButtonDefaults.buttonColors(containerColor = NovaAccent, contentColor = Color(0xFF0F172A)),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),

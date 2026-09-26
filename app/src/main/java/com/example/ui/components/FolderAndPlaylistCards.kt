@@ -72,7 +72,7 @@ fun FolderCard(
                     .size(48.dp)
                     .background(
                         Brush.linearGradient(
-                            if (isCurrentlyPlaying) listOf(NovaPrimary, NovaAccent) else listOf(NovaPrimary.copy(alpha = 0.8f), NovaSecondary.copy(alpha = 0.8f))
+                            if (isCurrentlyPlaying) listOf(NovaPrimary, NovaAccent) else listOf(NovaSecondary, NovaAccent)
                         ),
                         shape = CircleShape
                     ),
@@ -165,7 +165,7 @@ fun PlaylistCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(54.dp)
+                    .size(48.dp)
                     .background(
                         Brush.linearGradient(listOf(NovaSecondary, NovaAccent)),
                         shape = CircleShape
@@ -176,7 +176,7 @@ fun PlaylistCard(
                     imageVector = Icons.Default.PlaylistPlay,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             }
 
