@@ -9,6 +9,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -320,9 +325,19 @@ fun FullMusicPlayerBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Song Title & Artist & Favorite
+            // Dynamic Sound Wave Visualizer (Positioned above Title)
+            DynamicMusicVisualizer(
+                isPlaying = isPlaying,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(34.dp)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Song Title & Artist & Favorite (Adjusted below Visualizer)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -346,32 +361,6 @@ fun FullMusicPlayerBottomSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            // Sound Wave Visualizer
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(26.dp)
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val waveBars = 20
-                for (i in 0 until waveBars) {
-                    val barHeight = if (isPlaying) {
-                        (10 + ((i * 17 + (spinAngle.toInt() * 3)) % 16)).dp
-                    } else 4.dp
-                    Box(
-                        modifier = Modifier
-                            .width(3.5.dp)
-                            .height(barHeight)
-                            .background(
-                                if (i % 2 == 0) NovaAccent else NovaPrimary,
-                                RoundedCornerShape(2.dp)
-                            )
                     )
                 }
             }
@@ -804,6 +793,92 @@ fun FullMusicPlayerBottomSheet(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun DynamicMusicVisualizer(
+    isPlaying: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val barCount = 28
+    val infiniteTransition = rememberInfiniteTransition(label = "music_visualizer")
+    
+    val phase1 by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(1300, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "phase1"
+    )
+    val phase2 by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(750, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "phase2"
+    )
+    val beatPulse by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(420, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "beatPulse"
+    )
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(34.dp)
+            .padding(horizontal = 6.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        for (i in 0 until barCount) {
+            val normalizedPos = (i.toFloat() / (barCount - 1)) * 2f - 1f
+            val envelope = (1f - (normalizedPos * normalizedPos * 0.52f)).coerceIn(0.35f, 1f)
+            
+            val wave1 = kotlin.math.sin(phase1 + i * 0.45f)
+            val wave2 = kotlin.math.cos(phase2 - i * 0.62f)
+            val dynamicFactor = ((wave1 * 0.5f + wave2 * 0.5f + 1f) * 0.5f).coerceIn(0.15f, 1f)
+            
+            val targetHeightDp = if (isPlaying) {
+                (6f + 25f * envelope * dynamicFactor * (0.65f + 0.35f * beatPulse)).dp
+            } else {
+                (3.5f + 2f * envelope).dp
+            }
+
+            val animatedHeight by animateDpAsState(
+                targetValue = targetHeightDp,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                label = "bar_h_$i"
+            )
+
+            Box(
+                modifier = Modifier
+                    .width(3.2.dp)
+                    .height(animatedHeight)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                NovaAccent,
+                                NovaSecondary,
+                                NovaPrimary
+                            )
+                        )
+                    )
+            )
         }
     }
 }
