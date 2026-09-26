@@ -844,9 +844,9 @@ fun NovaPlayerApp(
     // Animated Pill Toast Overlay just below header
     val toastMsg by viewModel.toastMessage.collectAsState()
     val isDark = isSystemInDarkTheme()
-    val toastBg = if (isDark) Color(0xEE1E2230) else Color(0xEEF2F4F8)
-    val toastTextColor = if (isDark) Color.White else Color(0xFF1A1D24)
-    val toastBorderColor = if (isDark) NovaAccent.copy(alpha = 0.5f) else NovaAccent.copy(alpha = 0.4f)
+    val toastBg = if (isDark) Color(0xEEF2F4F8) else Color(0xEE1E2230)
+    val toastTextColor = if (isDark) Color(0xFF1A1D24) else Color.White
+    val toastBorderColor = if (isDark) NovaAccent.copy(alpha = 0.4f) else NovaAccent.copy(alpha = 0.5f)
 
     Box(
         modifier = Modifier
