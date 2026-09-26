@@ -193,11 +193,24 @@ fun MusicScreen(
         )
     }
 
+    val currentSelectedFolder = remember(selectedFolder, folders) {
+        selectedFolder?.let { sf -> folders.find { it.name == sf.name } ?: sf }
+    }
+    val currentSelectedAlbum = remember(selectedAlbum, albums) {
+        selectedAlbum?.let { sa -> albums.find { it.name == sa.name } ?: sa }
+    }
+    val currentSelectedArtist = remember(selectedArtist, artists) {
+        selectedArtist?.let { sa -> artists.find { it.name == sa.name } ?: sa }
+    }
+    val currentSelectedPlaylist = remember(selectedPlaylist, playlists) {
+        selectedPlaylist?.let { sp -> playlists.find { it.id == sp.id } ?: sp }
+    }
+
     // Handle Sub-screen Detail Views with BackHandler for phone hardware back button
-    if (selectedFolder != null) {
+    if (currentSelectedFolder != null) {
         androidx.activity.compose.BackHandler { selectedFolder = null }
         FolderDetailScreen(
-            folder = selectedFolder!!,
+            folder = currentSelectedFolder,
             currentPlayingSongId = currentPlayingSongId,
             isPlaying = isPlaying,
             onPlaySong = onPlaySong,
@@ -208,10 +221,10 @@ fun MusicScreen(
         return
     }
 
-    if (selectedAlbum != null) {
+    if (currentSelectedAlbum != null) {
         androidx.activity.compose.BackHandler { selectedAlbum = null }
         AlbumDetailScreen(
-            album = selectedAlbum!!,
+            album = currentSelectedAlbum,
             currentPlayingSongId = currentPlayingSongId,
             isPlaying = isPlaying,
             onPlaySong = onPlaySong,
@@ -222,10 +235,10 @@ fun MusicScreen(
         return
     }
 
-    if (selectedArtist != null) {
+    if (currentSelectedArtist != null) {
         androidx.activity.compose.BackHandler { selectedArtist = null }
         ArtistDetailScreen(
-            artist = selectedArtist!!,
+            artist = currentSelectedArtist,
             currentPlayingSongId = currentPlayingSongId,
             isPlaying = isPlaying,
             onPlaySong = onPlaySong,
@@ -234,10 +247,6 @@ fun MusicScreen(
             onBack = { selectedArtist = null }
         )
         return
-    }
-
-    val currentSelectedPlaylist = remember(selectedPlaylist, playlists) {
-        selectedPlaylist?.let { sp -> playlists.find { it.id == sp.id } ?: sp }
     }
 
     if (currentSelectedPlaylist != null) {
@@ -426,9 +435,8 @@ fun MusicScreen(
                         ) {
                             items(artists, key = { it.name }) { artist ->
                                 Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { selectedArtist = artist },
+                                    onClick = { selectedArtist = artist },
+                                    modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -490,9 +498,8 @@ fun MusicScreen(
                                     ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), album.id)
                                 }
                                 Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { selectedAlbum = album },
+                                    onClick = { selectedAlbum = album },
+                                    modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -554,9 +561,8 @@ fun MusicScreen(
                         ) {
                             items(folders, key = { it.name }) { folder ->
                                 Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { selectedFolder = folder },
+                                    onClick = { selectedFolder = folder },
+                                    modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -635,12 +641,11 @@ fun MusicScreen(
                             ) {
                                 items(playlists, key = { it.id }) { pl ->
                                     Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                val playlistObj = AudioPlaylist(id = pl.id, name = pl.name, description = pl.description, songs = pl.songs, songCount = pl.songCount)
-                                                selectedPlaylist = playlistObj
-                                            },
+                                        onClick = {
+                                            val playlistObj = AudioPlaylist(id = pl.id, name = pl.name, description = pl.description, songs = pl.songs, songCount = pl.songCount)
+                                            selectedPlaylist = playlistObj
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp),
                                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)

@@ -63,7 +63,11 @@ fun FoldersScreen(
     onShowVideoInfo: (Video) -> Unit,
     onDeleteVideo: (String) -> Unit
 ) {
-    if (selectedFolder != null) {
+    val currentSelectedFolder = androidx.compose.runtime.remember(selectedFolder, folders) {
+        selectedFolder?.let { sf -> folders.find { it.name == sf.name } ?: sf }
+    }
+
+    if (currentSelectedFolder != null) {
         BackHandler {
             onSelectFolder(null)
         }
@@ -96,13 +100,13 @@ fun FoldersScreen(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = selectedFolder.name,
+                        text = currentSelectedFolder.name,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1
                     )
                     Text(
-                        text = "${selectedFolder.videoCount} videos • ${selectedFolder.totalDurationFormatted}",
+                        text = "${currentSelectedFolder.videoCount} videos • ${currentSelectedFolder.totalDurationFormatted}",
                         style = MaterialTheme.typography.bodySmall,
                         color = NovaAccent
                     )
@@ -110,8 +114,8 @@ fun FoldersScreen(
 
                 Button(
                     onClick = {
-                        if (selectedFolder.videos.isNotEmpty()) {
-                            onPlayVideo(selectedFolder.videos.first(), selectedFolder.videos)
+                        if (currentSelectedFolder.videos.isNotEmpty()) {
+                            onPlayVideo(currentSelectedFolder.videos.first(), currentSelectedFolder.videos)
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = NovaAccent, contentColor = Color(0xFF0F172A)),
@@ -131,10 +135,10 @@ fun FoldersScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(selectedFolder.videos, key = { it.id }) { video ->
+                items(currentSelectedFolder.videos, key = { it.id }) { video ->
                     VideoCard(
                         video = video,
-                        onClick = { onPlayVideo(video, selectedFolder.videos) },
+                        onClick = { onPlayVideo(video, currentSelectedFolder.videos) },
                         isCurrentlyPlaying = (currentPlayingVideoId == video.id && isPlaying),
                         currentPosMs = currentPosMs,
                         onToggleFavorite = { onToggleFavorite(video) },
