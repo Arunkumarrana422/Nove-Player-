@@ -375,24 +375,22 @@ fun NovaPlayerApp(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val deleteIntentSender by viewModel.deleteIntentSender.collectAsState()
-    val deleteLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartIntentSenderForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            viewModel.showToast("Video deleted from storage")
-            viewModel.scanLibrary()
-        }
-        viewModel.clearDeleteIntentSender()
-    }
-
-    LaunchedEffect(deleteIntentSender) {
-        deleteIntentSender?.let { sender ->
+    val needManageStorage by viewModel.needManageStorage.collectAsState()
+    LaunchedEffect(needManageStorage) {
+        if (needManageStorage && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            viewModel.showToast("Please allow All Files Access once to delete files directly")
             try {
-                deleteLauncher.launch(IntentSenderRequest.Builder(sender).build())
+                val intent = Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                }
+                context.startActivity(intent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                    context.startActivity(intent)
+                } catch (_: Exception) {}
             }
+            viewModel.clearManageStorageFlag()
         }
     }
 

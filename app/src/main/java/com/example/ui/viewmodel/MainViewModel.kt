@@ -37,11 +37,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val playerManager = NovaPlayerManager(application)
     val audioPlayerManager = AudioPlayerManager(application)
 
-    private val _deleteIntentSender = MutableStateFlow<android.content.IntentSender?>(null)
-    val deleteIntentSender: StateFlow<android.content.IntentSender?> = _deleteIntentSender.asStateFlow()
+    private val _needManageStorage = MutableStateFlow(false)
+    val needManageStorage: StateFlow<Boolean> = _needManageStorage.asStateFlow()
 
-    fun clearDeleteIntentSender() {
-        _deleteIntentSender.value = null
+    fun clearManageStorageFlag() {
+        _needManageStorage.value = false
     }
 
     private val _toastMessage = MutableStateFlow<String?>(null)
@@ -240,8 +240,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteVideo(video: Video, deleteFromFileSystem: Boolean = false) {
         viewModelScope.launch {
-            repository.deleteVideo(video, deleteFromFileSystem) { sender ->
-                _deleteIntentSender.value = sender
+            repository.deleteVideo(video, deleteFromFileSystem) {
+                _needManageStorage.value = true
             }
         }
     }

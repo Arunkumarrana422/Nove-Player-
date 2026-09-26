@@ -192,9 +192,14 @@ class VideoRepository(private val context: Context) {
         videoDao.setFavorite(video.id, newFav)
     }
 
-    suspend fun deleteVideo(video: Video, deleteFromFileSystem: Boolean = false, onDeleteIntentSender: (IntentSender) -> Unit = {}) = withContext(Dispatchers.IO) {
+    suspend fun deleteVideo(video: Video, deleteFromFileSystem: Boolean = false, onNeedManageStorage: () -> Unit = {}) = withContext(Dispatchers.IO) {
         if (deleteFromFileSystem && !video.isOnline) {
             try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    if (!android.os.Environment.isExternalStorageManager()) {
+                        onNeedManageStorage()
+                    }
+                }
                 if (video.path.isNotBlank()) {
                     val file = java.io.File(video.path)
                     if (file.exists()) {
@@ -207,6 +212,12 @@ class VideoRepository(private val context: Context) {
                             null,
                             null
                         )
+                    } catch (_: Exception) {}
+                }
+                if (video.uri.isNotBlank()) {
+                    try {
+                        val uri = Uri.parse(video.uri)
+                        context.contentResolver.delete(uri, null, null)
                     } catch (_: Exception) {}
                 }
             } catch (e: Exception) {
