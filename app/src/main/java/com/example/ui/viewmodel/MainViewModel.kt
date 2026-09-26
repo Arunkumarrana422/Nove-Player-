@@ -360,6 +360,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setViewMode(mode: ViewMode) = viewModelScope.launch { settingsRepository.setViewMode(mode) }
     fun setDefaultSpeed(speed: Float) = viewModelScope.launch { settingsRepository.setDefaultSpeed(speed) }
     fun setDoubleTapSeek(sec: Int) = viewModelScope.launch { settingsRepository.setDoubleTapSeekSeconds(sec) }
+    fun setDoubleTapPlayPause(enabled: Boolean) = viewModelScope.launch { settingsRepository.setDoubleTapPlayPause(enabled) }
     fun setGesturesEnabled(enabled: Boolean) = viewModelScope.launch { settingsRepository.setGesturesEnabled(enabled) }
     fun setSwipeBrightness(enabled: Boolean) = viewModelScope.launch { settingsRepository.setSwipeBrightness(enabled) }
     fun setSwipeVolume(enabled: Boolean) = viewModelScope.launch { settingsRepository.setSwipeVolume(enabled) }

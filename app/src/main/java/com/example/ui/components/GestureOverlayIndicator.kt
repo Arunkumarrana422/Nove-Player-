@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.VolumeMute
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.ZoomIn
@@ -55,6 +57,7 @@ sealed class GestureHudState {
     data class DoubleTapSeek(val isForward: Boolean, val deltaSeconds: Int) : GestureHudState()
     data class SpeedBoost(val speed: Float) : GestureHudState()
     data class Zoom(val scale: Float) : GestureHudState()
+    data class PlayPause(val isPlaying: Boolean) : GestureHudState()
 }
 
 @Composable
@@ -62,7 +65,7 @@ fun GestureOverlayIndicator(
     hudState: GestureHudState,
     modifier: Modifier = Modifier
 ) {
-    val isPillHud = hudState is GestureHudState.SpeedBoost || hudState is GestureHudState.Zoom || hudState is GestureHudState.DoubleTapSeek
+    val isPillHud = hudState is GestureHudState.SpeedBoost || hudState is GestureHudState.Zoom || hudState is GestureHudState.DoubleTapSeek || hudState is GestureHudState.PlayPause
 
     AnimatedVisibility(
         visible = hudState !is GestureHudState.None,
@@ -223,6 +226,26 @@ fun GestureOverlayIndicator(
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
+                        )
+                    }
+                }
+                is GestureHudState.PlayPause -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = if (hudState.isPlaying) Icons.Default.PlayArrow else Icons.Default.Pause,
+                            contentDescription = if (hudState.isPlaying) "Play" else "Pause",
+                            tint = NovaAccent,
+                            modifier = Modifier.size(26.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (hudState.isPlaying) "PLAY" else "PAUSE",
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 14.sp
                         )
                     }
                 }

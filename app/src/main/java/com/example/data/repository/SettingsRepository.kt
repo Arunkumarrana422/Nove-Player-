@@ -24,6 +24,7 @@ data class UserSettings(
     val viewMode: ViewMode = ViewMode.LIST,
     val defaultSpeed: Float = 1.0f,
     val doubleTapSeekSeconds: Int = 10,
+    val doubleTapPlayPauseEnabled: Boolean = true,
     val gesturesEnabled: Boolean = true,
     val swipeBrightnessEnabled: Boolean = true,
     val swipeVolumeEnabled: Boolean = true,
@@ -48,6 +49,7 @@ class SettingsRepository(private val context: Context) {
         private val KEY_VIEW_MODE = stringPreferencesKey("view_mode")
         private val KEY_DEFAULT_SPEED = floatPreferencesKey("default_speed")
         private val KEY_DOUBLE_TAP_SEEK = intPreferencesKey("double_tap_seek")
+        private val KEY_DOUBLE_TAP_PLAY_PAUSE = booleanPreferencesKey("double_tap_play_pause")
         private val KEY_GESTURES = booleanPreferencesKey("gestures_enabled")
         private val KEY_SWIPE_BRIGHTNESS = booleanPreferencesKey("swipe_brightness")
         private val KEY_SWIPE_VOLUME = booleanPreferencesKey("swipe_volume")
@@ -84,6 +86,7 @@ class SettingsRepository(private val context: Context) {
             },
             defaultSpeed = prefs[KEY_DEFAULT_SPEED] ?: 1.0f,
             doubleTapSeekSeconds = prefs[KEY_DOUBLE_TAP_SEEK] ?: 10,
+            doubleTapPlayPauseEnabled = prefs[KEY_DOUBLE_TAP_PLAY_PAUSE] ?: true,
             gesturesEnabled = prefs[KEY_GESTURES] ?: true,
             swipeBrightnessEnabled = prefs[KEY_SWIPE_BRIGHTNESS] ?: true,
             swipeVolumeEnabled = prefs[KEY_SWIPE_VOLUME] ?: true,
@@ -124,6 +127,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setDoubleTapSeekSeconds(seconds: Int) {
         context.dataStore.edit { it[KEY_DOUBLE_TAP_SEEK] = seconds }
+    }
+
+    suspend fun setDoubleTapPlayPause(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_DOUBLE_TAP_PLAY_PAUSE] = enabled }
     }
 
     suspend fun setGesturesEnabled(enabled: Boolean) {

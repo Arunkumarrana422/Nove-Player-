@@ -308,6 +308,7 @@ fun PlayerScreen(
                     var cumulativeDoubleTapSeconds = 0
                     var lastTapTime = 0L
                     var lastTapOffset = Offset.Zero
+                    var lastTapIsCenter = false
 
                     awaitEachGesture {
                         val firstDown = awaitFirstDown(requireUnconsumed = false)
@@ -375,9 +376,34 @@ fun PlayerScreen(
                                         val now = System.currentTimeMillis()
                                         val timeSinceLastTap = now - lastTapTime
                                         val distFromLastTap = (startPos - lastTapOffset).getDistance()
+                                        val isCenter = startPos.x >= size.width * 0.33f && startPos.x <= size.width * 0.67f
                                         val isRightSide = startPos.x > size.width / 2
 
-                                        if (isDoubleTapSequenceActive && isRightSide == doubleTapSequenceSideIsRight && timeSinceLastTap < 800L) {
+                                        if (isCenter && lastTapIsCenter && settings.doubleTapPlayPauseEnabled && timeSinceLastTap < 350 && distFromLastTap < 140f) {
+                                            // Center Double Tap -> Toggle Play / Pause!
+                                            pendingSingleTapJob?.cancel()
+                                            pendingSingleTapJob = null
+                                            doubleTapResetJob?.cancel()
+                                            isDoubleTapSequenceActive = false
+                                            cumulativeDoubleTapSeconds = 0
+
+                                            val willPlay = !isPlaying
+                                            if (isPlaying) {
+                                                playerManager.pause()
+                                            } else {
+                                                playerManager.play()
+                                            }
+                                            hudState = GestureHudState.PlayPause(willPlay)
+                                            lastTapTime = 0L
+                                            lastTapIsCenter = false
+
+                                            doubleTapResetJob = scope.launch {
+                                                delay(800L)
+                                                if (hudState is GestureHudState.PlayPause) {
+                                                    hudState = GestureHudState.None
+                                                }
+                                            }
+                                        } else if (!isCenter && isDoubleTapSequenceActive && isRightSide == doubleTapSequenceSideIsRight && timeSinceLastTap < 800L) {
                                             // Subsequent tap in active multi-tap seek sequence (+20s, +30s, etc.)
                                             pendingSingleTapJob?.cancel()
                                             pendingSingleTapJob = null
@@ -391,6 +417,7 @@ fun PlayerScreen(
 
                                             lastTapTime = now
                                             lastTapOffset = startPos
+                                            lastTapIsCenter = false
 
                                             doubleTapResetJob?.cancel()
                                             doubleTapResetJob = scope.launch {
@@ -399,8 +426,8 @@ fun PlayerScreen(
                                                 cumulativeDoubleTapSeconds = 0
                                                 lastTapTime = 0L
                                             }
-                                        } else if (timeSinceLastTap < 350 && distFromLastTap < 120f) {
-                                            // Double Tap detected (first 10s seek):
+                                        } else if (!isCenter && timeSinceLastTap < 350 && distFromLastTap < 120f) {
+                                            // Left / Right Double Tap detected (10s seek):
                                             // Cancel pending single tap immediately so player buttons NEVER appear
                                             pendingSingleTapJob?.cancel()
                                             pendingSingleTapJob = null
@@ -416,6 +443,7 @@ fun PlayerScreen(
 
                                             lastTapTime = now
                                             lastTapOffset = startPos
+                                            lastTapIsCenter = false
 
                                             doubleTapResetJob?.cancel()
                                             doubleTapResetJob = scope.launch {
@@ -434,6 +462,7 @@ fun PlayerScreen(
                                             // Wait 280ms before toggling controls so double tap has time to be detected
                                             lastTapTime = now
                                             lastTapOffset = startPos
+                                            lastTapIsCenter = isCenter
                                             pendingSingleTapJob?.cancel()
                                             pendingSingleTapJob = scope.launch {
                                                 delay(280L)

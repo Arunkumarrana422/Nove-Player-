@@ -72,6 +72,7 @@ fun SettingsScreen(
     onThemeChange: (ThemePreference) -> Unit,
     onDefaultSpeedChange: (Float) -> Unit,
     onDoubleTapSeekChange: (Int) -> Unit,
+    onDoubleTapPlayPauseToggle: (Boolean) -> Unit = {},
     onGesturesToggle: (Boolean) -> Unit,
     onSwipeBrightnessToggle: (Boolean) -> Unit,
     onSwipeVolumeToggle: (Boolean) -> Unit,
@@ -178,6 +179,16 @@ fun SettingsScreen(
                             }
                         }
                     }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+
+                    SettingsSwitchRow(
+                        icon = Icons.Default.PlayCircle,
+                        title = "Double Tap Play & Pause",
+                        subtitle = "Double tap screen center to play or pause video",
+                        checked = settings.doubleTapPlayPauseEnabled,
+                        onCheckedChange = onDoubleTapPlayPauseToggle
+                    )
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 

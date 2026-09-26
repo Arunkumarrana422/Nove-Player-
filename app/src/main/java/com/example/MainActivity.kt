@@ -766,6 +766,7 @@ fun NovaPlayerApp(
                         onThemeChange = { viewModel.setTheme(it) },
                         onDefaultSpeedChange = { viewModel.setDefaultSpeed(it) },
                         onDoubleTapSeekChange = { viewModel.setDoubleTapSeek(it) },
+                        onDoubleTapPlayPauseToggle = { viewModel.setDoubleTapPlayPause(it) },
                         onGesturesToggle = { viewModel.setGesturesEnabled(it) },
                         onSwipeBrightnessToggle = { viewModel.setSwipeBrightness(it) },
                         onSwipeVolumeToggle = { viewModel.setSwipeVolume(it) },
