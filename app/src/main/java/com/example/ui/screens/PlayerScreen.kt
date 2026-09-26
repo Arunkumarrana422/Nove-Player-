@@ -169,6 +169,15 @@ fun PlayerScreen(
         }
     }
 
+    // Keep screen turned ON continuously during playback so phone never auto-locks
+    DisposableEffect(isPlaying) {
+        val window = activity?.window
+        if (window != null) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {}
+    }
+
     // Immersive Fullscreen Mode & Brightness Management
     DisposableEffect(Unit) {
         val window = activity?.window
@@ -246,6 +255,7 @@ fun PlayerScreen(
                     PlayerView(ctx).apply {
                         player = playerManager.exoPlayer
                         useController = false
+                        keepScreenOn = true
                         layoutParams = FrameLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT
@@ -255,6 +265,7 @@ fun PlayerScreen(
                 },
                 update = { playerView ->
                     playerView.player = playerManager.exoPlayer
+                    playerView.keepScreenOn = true
                     playerView.resizeMode = when (aspectRatioMode) {
                         AspectRatioMode.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
                         AspectRatioMode.FILL_CROP -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
@@ -387,13 +398,14 @@ fun PlayerScreen(
                                             isDoubleTapSequenceActive = false
                                             cumulativeDoubleTapSeconds = 0
 
-                                            val willPlay = !isPlaying
-                                            if (isPlaying) {
+                                            val wasPlaying = try { playerManager.exoPlayer.isPlaying } catch (_: Exception) { isPlaying }
+                                            if (wasPlaying) {
                                                 playerManager.pause()
+                                                hudState = GestureHudState.PlayPause(isPlaying = false)
                                             } else {
                                                 playerManager.play()
+                                                hudState = GestureHudState.PlayPause(isPlaying = true)
                                             }
-                                            hudState = GestureHudState.PlayPause(willPlay)
                                             lastTapTime = 0L
                                             lastTapIsCenter = false
 

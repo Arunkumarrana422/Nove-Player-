@@ -449,8 +449,9 @@ private fun SettingsSwitchRow(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = NovaPrimary,
-                uncheckedTrackColor = MaterialTheme.colorScheme.surface
+                checkedTrackColor = NovaAccent,
+                checkedBorderColor = Color.Transparent,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
     }

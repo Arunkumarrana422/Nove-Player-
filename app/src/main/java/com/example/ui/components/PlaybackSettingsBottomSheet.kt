@@ -336,7 +336,8 @@ private fun ToggleRow(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = NovaPrimary,
+                checkedTrackColor = NovaAccent,
+                checkedBorderColor = Color.Transparent,
                 uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
