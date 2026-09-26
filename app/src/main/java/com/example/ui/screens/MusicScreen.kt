@@ -73,6 +73,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -427,11 +428,10 @@ fun MusicScreen(
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
                                         .clickable { selectedArtist = artist },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp)
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -492,11 +492,10 @@ fun MusicScreen(
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
                                         .clickable { selectedAlbum = album },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp)
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(10.dp)) {
                                         Box(
@@ -557,11 +556,10 @@ fun MusicScreen(
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
                                         .clickable { selectedFolder = folder },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp)
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(14.dp),
@@ -639,14 +637,13 @@ fun MusicScreen(
                                     Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
                                             .clickable {
                                                 val playlistObj = AudioPlaylist(id = pl.id, name = pl.name, description = pl.description, songs = pl.songs, songCount = pl.songCount)
                                                 selectedPlaylist = playlistObj
                                             },
                                         shape = RoundedCornerShape(12.dp),
                                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp)
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                                     ) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth().padding(14.dp),
