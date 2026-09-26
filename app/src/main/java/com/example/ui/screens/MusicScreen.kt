@@ -119,19 +119,10 @@ fun MusicScreen(
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Tracks", "Artists", "Albums", "Folders", "Playlists", "Favorites")
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(selectedTab) {
-        if (pagerState.currentPage != selectedTab) {
-            pagerState.animateScrollToPage(selectedTab)
-        }
-    }
-    LaunchedEffect(pagerState.currentPage) {
-        selectedTab = pagerState.currentPage
-    }
+    val selectedTab = pagerState.currentPage
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -376,7 +367,6 @@ fun MusicScreen(
                 Tab(
                     selected = selectedTab == index,
                     onClick = {
-                        selectedTab = index
                         coroutineScope.launch { pagerState.animateScrollToPage(index) }
                     },
                     text = {
@@ -1070,20 +1060,28 @@ fun PlaylistDetailScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            items(playlist.songs, key = { it.id }) { song ->
-                SongItemCard(
-                    song = song,
-                    isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
-                    onClick = { onPlaySong(song, playlist.songs) },
-                    onToggleFavorite = { onToggleFavorite(song) },
-                    onAddToPlaylist = { onAddToPlaylist(song) },
-                    onRemoveFromPlaylist = { onRemoveFromPlaylist?.invoke(playlist.id, song.id) }
-                )
+        if (playlist.songs.isEmpty()) {
+            EmptyStateView(
+                icon = Icons.Default.PlaylistPlay,
+                title = "Playlist is Empty",
+                description = "Add songs to '${playlist.name}' from your music library."
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 120.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(playlist.songs, key = { it.id }) { song ->
+                    SongItemCard(
+                        song = song,
+                        isCurrentlyPlaying = (currentPlayingSongId == song.id && isPlaying),
+                        onClick = { onPlaySong(song, playlist.songs) },
+                        onToggleFavorite = { onToggleFavorite(song) },
+                        onAddToPlaylist = { onAddToPlaylist(song) },
+                        onRemoveFromPlaylist = { onRemoveFromPlaylist?.invoke(playlist.id, song.id) }
+                    )
+                }
             }
         }
     }
