@@ -644,6 +644,7 @@ fun NovaPlayerApp(
                                 playlists = playlists,
                                 selectedPlaylist = selectedPlaylist,
                                 playlistVideosFlow = { id -> viewModel.getPlaylistVideos(id) },
+                                allVideos = allVideos,
                                 currentPlayingVideoId = currentVideoPlaying?.id,
                                 isPlaying = isPlaying,
                                 currentPosMs = currentPosMs,
@@ -651,6 +652,10 @@ fun NovaPlayerApp(
                                 onCreatePlaylistClick = { showCreatePlaylistDialog = true },
                                 onDeletePlaylist = { viewModel.deletePlaylist(it) },
                                 onRemoveFromPlaylist = { pId, vId -> viewModel.removeVideoFromPlaylist(pId, vId) },
+                                onAddVideosToPlaylist = { plId, videos ->
+                                    viewModel.addVideosToPlaylist(plId, videos)
+                                    viewModel.showToast("Added ${videos.size} videos")
+                                },
                                 onPlayVideo = { video, playlist ->
                                     viewModel.playerManager.playVideo(video, playlist)
                                     navController.navigate(Screen.Player.route)
@@ -687,6 +692,10 @@ fun NovaPlayerApp(
                         },
                         onDeletePlaylist = { plId ->
                             viewModel.deleteAudioPlaylist(plId)
+                        },
+                        onAddSongsToPlaylist = { plId, songs ->
+                            viewModel.addSongsToAudioPlaylist(plId, songs)
+                            viewModel.showToast("Added ${songs.size} songs")
                         },
                         onBack = { navController.popBackStack() }
                     )

@@ -313,6 +313,12 @@ class VideoRepository(private val context: Context) {
         }
     }
 
+    suspend fun addVideosToPlaylist(playlistId: Long, videos: List<Video>) = withContext(Dispatchers.IO) {
+        videos.forEach { video ->
+            addVideoToPlaylist(playlistId, video)
+        }
+    }
+
     suspend fun removeVideoFromPlaylist(playlistId: Long, videoId: String) = withContext(Dispatchers.IO) {
         playlistDao.removeVideoFromPlaylist(playlistId, videoId)
         val p = playlistDao.getPlaylistById(playlistId)

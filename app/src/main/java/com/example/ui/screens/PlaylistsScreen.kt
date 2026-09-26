@@ -48,6 +48,7 @@ import com.example.domain.model.Playlist
 import com.example.domain.model.Video
 import com.example.ui.components.EmptyStateView
 import com.example.ui.components.DeletePlaylistConfirmDialog
+import com.example.ui.components.AddVideosScreen
 import com.example.ui.components.PlaylistCard
 import com.example.ui.components.VideoCard
 import com.example.ui.theme.NovaAccent
@@ -59,6 +60,7 @@ fun PlaylistsScreen(
     playlists: List<Playlist>,
     selectedPlaylist: Playlist?,
     playlistVideosFlow: ((Long) -> Flow<List<Video>>)?,
+    allVideos: List<Video> = emptyList(),
     currentPlayingVideoId: String? = null,
     isPlaying: Boolean = false,
     currentPosMs: Long = 0L,
@@ -66,25 +68,44 @@ fun PlaylistsScreen(
     onCreatePlaylistClick: () -> Unit,
     onDeletePlaylist: (Long) -> Unit,
     onRemoveFromPlaylist: (Long, String) -> Unit,
+    onAddVideosToPlaylist: ((Long, List<Video>) -> Unit)? = null,
     onPlayVideo: (Video, List<Video>) -> Unit,
     onToggleFavorite: (Video) -> Unit,
     onAddToPlaylist: (Video) -> Unit,
     onShowVideoInfo: (Video) -> Unit
 ) {
-    if (selectedPlaylist != null && playlistVideosFlow != null) {
-        val playlistVideos by playlistVideosFlow(selectedPlaylist.id).collectAsState(initial = emptyList())
+    val currentSelectedPlaylist = remember(selectedPlaylist, playlists) {
+        selectedPlaylist?.let { sp -> playlists.find { it.id == sp.id } ?: sp }
+    }
+
+    if (currentSelectedPlaylist != null && playlistVideosFlow != null) {
+        val playlistVideos by playlistVideosFlow(currentSelectedPlaylist.id).collectAsState(initial = emptyList())
         var showDeleteConfirm by remember { mutableStateOf(false) }
+        var showMultiSelectAdd by remember { mutableStateOf(false) }
 
         if (showDeleteConfirm) {
             DeletePlaylistConfirmDialog(
-                playlistName = selectedPlaylist.name,
+                playlistName = currentSelectedPlaylist.name,
                 onDismiss = { showDeleteConfirm = false },
                 onConfirm = {
                     showDeleteConfirm = false
-                    onDeletePlaylist(selectedPlaylist.id)
+                    onDeletePlaylist(currentSelectedPlaylist.id)
                     onSelectPlaylist(null)
                 }
             )
+        }
+
+        if (showMultiSelectAdd) {
+            AddVideosScreen(
+                allVideos = allVideos,
+                existingVideoIds = playlistVideos.map { it.id }.toSet(),
+                onBack = { showMultiSelectAdd = false },
+                onAddVideos = { videos ->
+                    showMultiSelectAdd = false
+                    onAddVideosToPlaylist?.invoke(currentSelectedPlaylist.id, videos)
+                }
+            )
+            return
         }
 
         BackHandler {
@@ -112,7 +133,7 @@ fun PlaylistsScreen(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = selectedPlaylist.name,
+                        text = currentSelectedPlaylist.name,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -120,6 +141,13 @@ fun PlaylistsScreen(
                         text = "${playlistVideos.size} videos",
                         style = MaterialTheme.typography.bodySmall,
                         color = NovaAccent
+                    )
+                }
+                IconButton(onClick = { showMultiSelectAdd = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Videos",
+                        tint = NovaAccent
                     )
                 }
                 IconButton(onClick = {
@@ -168,7 +196,7 @@ fun PlaylistsScreen(
                 EmptyStateView(
                     icon = Icons.Default.PlaylistPlay,
                     title = "Playlist is Empty",
-                    description = "Add videos to '${selectedPlaylist.name}' from your video library or folders."
+                    description = "Add videos to '${currentSelectedPlaylist.name}' from your video library or folders."
                 )
             } else {
                 LazyColumn(
@@ -185,7 +213,7 @@ fun PlaylistsScreen(
                             onToggleFavorite = { onToggleFavorite(video) },
                             onAddToPlaylist = { onAddToPlaylist(video) },
                             onShowInfo = { onShowVideoInfo(video) },
-                            onRemoveFromPlaylist = { onRemoveFromPlaylist(selectedPlaylist.id, video.id) }
+                            onRemoveFromPlaylist = { onRemoveFromPlaylist(currentSelectedPlaylist.id, video.id) }
                         )
                     }
                 }

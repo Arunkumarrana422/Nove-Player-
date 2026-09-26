@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
@@ -88,6 +89,7 @@ import com.example.domain.model.AudioPlaylist
 import com.example.domain.model.Song
 import com.example.ui.components.EmptyStateView
 import com.example.ui.components.DeletePlaylistConfirmDialog
+import com.example.ui.components.AddSongsScreen
 import com.example.ui.components.NowPlayingEqualizer
 import com.example.ui.theme.NovaAccent
 import com.example.ui.theme.NovaPrimary
@@ -113,6 +115,7 @@ fun MusicScreen(
     onCreatePlaylist: (String) -> Unit,
     onRemoveFromPlaylist: ((Long, String) -> Unit)? = null,
     onDeletePlaylist: ((Long) -> Unit)? = null,
+    onAddSongsToPlaylist: ((Long, List<Song>) -> Unit)? = null,
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -241,10 +244,15 @@ fun MusicScreen(
         return
     }
 
-    if (selectedPlaylist != null) {
+    val currentSelectedPlaylist = remember(selectedPlaylist, playlists) {
+        selectedPlaylist?.let { sp -> playlists.find { it.id == sp.id } ?: sp }
+    }
+
+    if (currentSelectedPlaylist != null) {
         androidx.activity.compose.BackHandler { selectedPlaylist = null }
         PlaylistDetailScreen(
-            playlist = selectedPlaylist!!,
+            playlist = currentSelectedPlaylist,
+            allSongs = songs,
             currentPlayingSongId = currentPlayingSongId,
             isPlaying = isPlaying,
             onPlaySong = onPlaySong,
@@ -252,6 +260,7 @@ fun MusicScreen(
             onAddToPlaylist = onAddToPlaylist,
             onRemoveFromPlaylist = onRemoveFromPlaylist,
             onDeletePlaylist = onDeletePlaylist,
+            onAddSongsToPlaylist = onAddSongsToPlaylist,
             onBack = { selectedPlaylist = null }
         )
         return
@@ -938,6 +947,7 @@ fun ArtistDetailScreen(
 @Composable
 fun PlaylistDetailScreen(
     playlist: AudioPlaylist,
+    allSongs: List<Song> = emptyList(),
     currentPlayingSongId: String?,
     isPlaying: Boolean,
     onPlaySong: (Song, List<Song>) -> Unit,
@@ -945,9 +955,11 @@ fun PlaylistDetailScreen(
     onAddToPlaylist: (Song) -> Unit,
     onRemoveFromPlaylist: ((Long, String) -> Unit)?,
     onDeletePlaylist: ((Long) -> Unit)?,
+    onAddSongsToPlaylist: ((Long, List<Song>) -> Unit)? = null,
     onBack: () -> Unit
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showMultiSelectAdd by remember { mutableStateOf(false) }
 
     if (showDeleteConfirm) {
         DeletePlaylistConfirmDialog(
@@ -959,6 +971,19 @@ fun PlaylistDetailScreen(
                 onBack()
             }
         )
+    }
+
+    if (showMultiSelectAdd) {
+        AddSongsScreen(
+            allSongs = allSongs,
+            existingSongIds = playlist.songs.map { it.id }.toSet(),
+            onBack = { showMultiSelectAdd = false },
+            onAddSongs = { songs ->
+                showMultiSelectAdd = false
+                onAddSongsToPlaylist?.invoke(playlist.id, songs)
+            }
+        )
+        return
     }
 
     Column(
@@ -985,6 +1010,13 @@ fun PlaylistDetailScreen(
                     text = "${playlist.songs.size} tracks",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = { showMultiSelectAdd = true }) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Songs",
+                    tint = NovaAccent
                 )
             }
             IconButton(

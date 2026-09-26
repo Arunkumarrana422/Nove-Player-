@@ -236,6 +236,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         musicRepository.addSongToPlaylist(playlistId, song)
     }
 
+    fun addSongsToAudioPlaylist(playlistId: Long, songs: List<Song>) {
+        musicRepository.addSongsToPlaylist(playlistId, songs)
+    }
+
     fun removeSongFromAudioPlaylist(playlistId: Long, songId: String) {
         musicRepository.removeSongFromPlaylist(playlistId, songId)
     }
@@ -333,6 +337,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun addVideoToPlaylist(playlistId: Long, video: Video) {
         viewModelScope.launch {
             repository.addVideoToPlaylist(playlistId, video)
+        }
+    }
+
+    fun addVideosToPlaylist(playlistId: Long, videos: List<Video>) {
+        viewModelScope.launch {
+            repository.addVideosToPlaylist(playlistId, videos)
         }
     }
 

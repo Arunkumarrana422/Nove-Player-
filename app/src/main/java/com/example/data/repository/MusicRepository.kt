@@ -220,6 +220,24 @@ class MusicRepository(private val context: Context) {
         _allSongs.value = _allSongs.value.map {
             if (it.id == song.id) it.copy(isFavorite = newFav) else it
         }
+
+        _audioPlaylists.value = _audioPlaylists.value.map { pl ->
+            val updatedSongs = pl.songs.map { s ->
+                if (s.id == song.id) s.copy(isFavorite = newFav) else s
+            }
+            pl.copy(songs = updatedSongs)
+        }
+    }
+
+    fun addSongsToPlaylist(playlistId: Long, songs: List<Song>) {
+        _audioPlaylists.value = _audioPlaylists.value.map { pl ->
+            if (pl.id == playlistId) {
+                val existingIds = pl.songs.map { it.id }.toSet()
+                val newSongs = songs.filter { !existingIds.contains(it.id) }
+                val updated = pl.songs + newSongs
+                pl.copy(songs = updated, songCount = updated.size)
+            } else pl
+        }
     }
 
     fun createPlaylist(name: String, description: String = "") {
