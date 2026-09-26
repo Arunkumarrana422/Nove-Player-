@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Sort
 import com.example.ui.components.CreatePlaylistDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -86,6 +87,7 @@ import com.example.domain.model.AudioFolder
 import com.example.domain.model.AudioPlaylist
 import com.example.domain.model.Song
 import com.example.ui.components.EmptyStateView
+import com.example.ui.components.DeletePlaylistConfirmDialog
 import com.example.ui.components.NowPlayingEqualizer
 import com.example.ui.theme.NovaAccent
 import com.example.ui.theme.NovaPrimary
@@ -945,6 +947,20 @@ fun PlaylistDetailScreen(
     onDeletePlaylist: ((Long) -> Unit)?,
     onBack: () -> Unit
 ) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm) {
+        DeletePlaylistConfirmDialog(
+            playlistName = playlist.name,
+            onDismiss = { showDeleteConfirm = false },
+            onConfirm = {
+                showDeleteConfirm = false
+                onDeletePlaylist?.invoke(playlist.id)
+                onBack()
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -973,8 +989,7 @@ fun PlaylistDetailScreen(
             }
             IconButton(
                 onClick = {
-                    onDeletePlaylist?.invoke(playlist.id)
-                    onBack()
+                    showDeleteConfirm = true
                 }
             ) {
                 Icon(
@@ -983,18 +998,41 @@ fun PlaylistDetailScreen(
                     tint = Color(0xFFEF4444)
                 )
             }
-            Button(
-                onClick = {
-                    if (playlist.songs.isNotEmpty()) {
-                        onPlaySong(playlist.songs.first(), playlist.songs)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
-                shape = RoundedCornerShape(8.dp)
+        }
+
+        if (playlist.songs.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Play All")
+                Button(
+                    onClick = { onPlaySong(playlist.songs.first(), playlist.songs) },
+                    colors = ButtonDefaults.buttonColors(containerColor = NovaAccent),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Play All")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        val shuffledSongs = playlist.songs.shuffled()
+                        if (shuffledSongs.isNotEmpty()) {
+                            onPlaySong(shuffledSongs.first(), shuffledSongs)
+                        }
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Shuffle")
+                }
             }
         }
 
@@ -1124,78 +1162,76 @@ fun SongItemCard(
                 }
             }
 
-            if (onRemoveFromPlaylist != null) {
+            // Favorite Button
+            IconButton(
+                onClick = onToggleFavorite,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Favorite",
+                    tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // More Menu
+            Box {
                 IconButton(
-                    onClick = onRemoveFromPlaylist,
+                    onClick = { menuExpanded = true },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Remove from playlist",
-                        tint = Color(0xFFEF4444),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            } else {
-                // Favorite Button
-                IconButton(
-                    onClick = onToggleFavorite,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favorite",
-                        tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Song options",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
 
-                // More Menu
-                Box {
-                    IconButton(
-                        onClick = { menuExpanded = true },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Song options",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Play Song") },
-                            leadingIcon = { Icon(Icons.Default.PlayArrow, null, tint = NovaAccent) },
-                            onClick = {
-                                menuExpanded = false
-                                onClick()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(if (song.isFavorite) "Remove Favorite" else "Add to Favorite") },
-                            leadingIcon = {
-                                Icon(
-                                    if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    null,
-                                    tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurface
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onToggleFavorite()
-                            }
-                        )
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Play Song") },
+                        leadingIcon = { Icon(Icons.Default.PlayArrow, null, tint = NovaAccent) },
+                        onClick = {
+                            menuExpanded = false
+                            onClick()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(if (song.isFavorite) "Remove Favorite" else "Add to Favorite") },
+                        leadingIcon = {
+                            Icon(
+                                if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                null,
+                                tint = if (song.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onToggleFavorite()
+                        }
+                    )
+                    if (onRemoveFromPlaylist == null) {
                         DropdownMenuItem(
                             text = { Text("Add to Playlist") },
                             leadingIcon = { Icon(Icons.Default.PlaylistAdd, null) },
                             onClick = {
                                 menuExpanded = false
                                 onAddToPlaylist()
+                            }
+                        )
+                    }
+                    if (onRemoveFromPlaylist != null) {
+                        DropdownMenuItem(
+                            text = { Text("Remove from Playlist") },
+                            leadingIcon = { Icon(Icons.Default.Delete, null, tint = Color(0xFFEF4444)) },
+                            onClick = {
+                                menuExpanded = false
+                                onRemoveFromPlaylist()
                             }
                         )
                     }

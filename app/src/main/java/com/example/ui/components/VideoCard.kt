@@ -131,6 +131,7 @@ fun VideoCard(
     onAddToPlaylist: () -> Unit = {},
     onShowInfo: () -> Unit = {},
     onDelete: () -> Unit = {},
+    onRemoveFromPlaylist: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -374,14 +375,16 @@ fun VideoCard(
                             onToggleFavorite()
                         }
                     )
-                    DropdownMenuItem(
-                        text = { Text("Add to Playlist") },
-                        leadingIcon = { Icon(Icons.Default.PlaylistAdd, null) },
-                        onClick = {
-                            menuExpanded = false
-                            onAddToPlaylist()
-                        }
-                    )
+                    if (onRemoveFromPlaylist == null) {
+                        DropdownMenuItem(
+                            text = { Text("Add to Playlist") },
+                            leadingIcon = { Icon(Icons.Default.PlaylistAdd, null) },
+                            onClick = {
+                                menuExpanded = false
+                                onAddToPlaylist()
+                            }
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text("File Information") },
                         leadingIcon = { Icon(Icons.Default.Info, null) },
@@ -391,11 +394,15 @@ fun VideoCard(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Delete Video") },
+                        text = { Text(if (onRemoveFromPlaylist != null) "Remove from Playlist" else "Delete Video") },
                         leadingIcon = { Icon(Icons.Default.Delete, null, tint = Color(0xFFEF4444)) },
                         onClick = {
                             menuExpanded = false
-                            onDelete()
+                            if (onRemoveFromPlaylist != null) {
+                                onRemoveFromPlaylist()
+                            } else {
+                                onDelete()
+                            }
                         }
                     )
                 }

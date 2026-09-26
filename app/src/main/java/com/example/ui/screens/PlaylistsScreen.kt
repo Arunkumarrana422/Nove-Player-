@@ -34,6 +34,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.example.domain.model.Playlist
 import com.example.domain.model.Video
 import com.example.ui.components.EmptyStateView
+import com.example.ui.components.DeletePlaylistConfirmDialog
 import com.example.ui.components.PlaylistCard
 import com.example.ui.components.VideoCard
 import com.example.ui.theme.NovaAccent
@@ -69,6 +73,19 @@ fun PlaylistsScreen(
 ) {
     if (selectedPlaylist != null && playlistVideosFlow != null) {
         val playlistVideos by playlistVideosFlow(selectedPlaylist.id).collectAsState(initial = emptyList())
+        var showDeleteConfirm by remember { mutableStateOf(false) }
+
+        if (showDeleteConfirm) {
+            DeletePlaylistConfirmDialog(
+                playlistName = selectedPlaylist.name,
+                onDismiss = { showDeleteConfirm = false },
+                onConfirm = {
+                    showDeleteConfirm = false
+                    onDeletePlaylist(selectedPlaylist.id)
+                    onSelectPlaylist(null)
+                }
+            )
+        }
 
         BackHandler {
             onSelectPlaylist(null)
@@ -106,8 +123,7 @@ fun PlaylistsScreen(
                     )
                 }
                 IconButton(onClick = {
-                    onDeletePlaylist(selectedPlaylist.id)
-                    onSelectPlaylist(null)
+                    showDeleteConfirm = true
                 }) {
                     Icon(
                         imageVector = Icons.Default.Delete,
@@ -169,7 +185,7 @@ fun PlaylistsScreen(
                             onToggleFavorite = { onToggleFavorite(video) },
                             onAddToPlaylist = { onAddToPlaylist(video) },
                             onShowInfo = { onShowVideoInfo(video) },
-                            onDelete = { onRemoveFromPlaylist(selectedPlaylist.id, video.id) }
+                            onRemoveFromPlaylist = { onRemoveFromPlaylist(selectedPlaylist.id, video.id) }
                         )
                     }
                 }

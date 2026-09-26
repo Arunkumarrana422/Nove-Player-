@@ -75,6 +75,7 @@ import com.example.domain.model.Song
 import com.example.domain.model.ThemePreference
 import com.example.domain.model.Video
 import com.example.ui.components.AddToPlaylistDialog
+import com.example.ui.components.AddSongToPlaylistDialog
 import com.example.ui.components.CreatePlaylistDialog
 import com.example.ui.components.DeleteVideoDialog
 import com.example.ui.components.FullMusicPlayerBottomSheet
@@ -368,6 +369,7 @@ fun NovaPlayerApp(
     // Dialog & BottomSheet state
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
     var videoToAddToPlaylist by remember { mutableStateOf<Video?>(null) }
+    var songToAddToPlaylist by remember { mutableStateOf<Song?>(null) }
     var infoVideo by remember { mutableStateOf<Video?>(null) }
     var videoToDelete by remember { mutableStateOf<Video?>(null) }
 
@@ -675,12 +677,7 @@ fun NovaPlayerApp(
                         },
                         onToggleFavorite = { viewModel.toggleFavoriteSong(it) },
                         onAddToPlaylist = { song ->
-                            if (audioPlaylists.isNotEmpty()) {
-                                viewModel.addSongToAudioPlaylist(audioPlaylists.first().id, song)
-                                viewModel.showToast("Added to playlist")
-                            } else {
-                                viewModel.createAudioPlaylist("My Music Playlist")
-                            }
+                            songToAddToPlaylist = song
                         },
                         onCreatePlaylist = { name ->
                             viewModel.createAudioPlaylist(name)
@@ -809,6 +806,23 @@ fun NovaPlayerApp(
             },
             onCreateNewPlaylist = {
                 videoToAddToPlaylist = null
+                showCreatePlaylistDialog = true
+            }
+        )
+    }
+
+    songToAddToPlaylist?.let { song ->
+        AddSongToPlaylistDialog(
+            song = song,
+            playlists = audioPlaylists,
+            onDismiss = { songToAddToPlaylist = null },
+            onSelectPlaylist = { playlist ->
+                viewModel.addSongToAudioPlaylist(playlist.id, song)
+                songToAddToPlaylist = null
+                viewModel.showToast("Added to ${playlist.name}")
+            },
+            onCreateNewPlaylist = {
+                songToAddToPlaylist = null
                 showCreatePlaylistDialog = true
             }
         )

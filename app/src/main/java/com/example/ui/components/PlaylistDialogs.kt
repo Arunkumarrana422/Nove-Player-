@@ -39,7 +39,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.model.AudioPlaylist
 import com.example.domain.model.Playlist
+import com.example.domain.model.Song
 import com.example.domain.model.Video
 import com.example.ui.theme.NovaAccent
 import com.example.ui.theme.NovaPrimary
@@ -195,6 +197,131 @@ fun AddToPlaylistDialog(
             }
         },
         confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun AddSongToPlaylistDialog(
+    song: Song,
+    playlists: List<AudioPlaylist>,
+    onDismiss: () -> Unit,
+    onSelectPlaylist: (AudioPlaylist) -> Unit,
+    onCreateNewPlaylist: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Add to Playlist",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = song.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NovaAccent,
+                    maxLines = 1
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(NovaPrimary.copy(alpha = 0.15f))
+                        .clickable(onClick = onCreateNewPlaylist)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = NovaAccent)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Create New Playlist",
+                        fontWeight = FontWeight.SemiBold,
+                        color = NovaAccent
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                if (playlists.isEmpty()) {
+                    Text(
+                        text = "No playlists created yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                        items(playlists) { playlist ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onSelectPlaylist(playlist) }
+                                    .padding(vertical = 10.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlaylistPlay,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = playlist.name,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "${playlist.songs.size} tracks",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun DeletePlaylistConfirmDialog(
+    playlistName: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete Playlist") },
+        text = { Text("Are you sure you want to delete \"$playlistName\"?") },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+            ) {
+                Text("Delete")
+            }
+        },
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
