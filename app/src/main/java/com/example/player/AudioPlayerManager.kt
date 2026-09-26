@@ -9,6 +9,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
+import android.support.v4.media.MediaMetadataCompat
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -106,6 +109,17 @@ class AudioPlayerManager(private val context: Context) {
     private var progressJob: Job? = null
     private var sleepTimerJob: Job? = null
 
+    val mediaSession = MediaSessionCompat(context, "NovaAudioSession").apply {
+        isActive = true
+        setCallback(object : MediaSessionCompat.Callback() {
+            override fun onPlay() { play() }
+            override fun onPause() { pause() }
+            override fun onSkipToNext() { nextSong() }
+            override fun onSkipToPrevious() { previousSong() }
+            override fun onSeekTo(pos: Long) { seekTo(pos) }
+        })
+    }
+
     // Callback to stop video playback when audio starts
     var onAudioStarted: (() -> Unit)? = null
     var onToggleFavorite: ((Song) -> Unit)? = null
@@ -147,6 +161,22 @@ class AudioPlayerManager(private val context: Context) {
     fun updateMediaNotification() {
         val song = _currentSong.value ?: return
         val isPlaying = _isPlaying.value
+
+        val state = if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+        mediaSession.setPlaybackState(
+            PlaybackStateCompat.Builder()
+                .setState(state, _currentPositionMs.value, _playbackSpeed.value)
+                .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or PlaybackStateCompat.ACTION_SEEK_TO)
+                .build()
+        )
+        mediaSession.setMetadata(
+            MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, song.title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, song.artist)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, song.album)
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, song.durationMs)
+                .build()
+        )
 
         val intent = Intent(context, com.example.MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -199,6 +229,7 @@ class AudioPlayerManager(private val context: Context) {
             .setOngoing(isAppInForeground)
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
+                    .setMediaSession(mediaSession.sessionToken)
                     .setShowActionsInCompactView(0, 1, 2)
             )
             .addAction(prevAction)
