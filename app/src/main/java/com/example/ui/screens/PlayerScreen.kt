@@ -161,7 +161,7 @@ fun PlayerScreen(
 
     // Auto-dismiss HUD timer
     LaunchedEffect(hudState) {
-        if (hudState !is GestureHudState.None && !isSeekingGesture) {
+        if (hudState !is GestureHudState.None && hudState !is GestureHudState.SpeedBoost && !isSeekingGesture) {
             delay(1200)
             hudState = GestureHudState.None
         }
@@ -313,6 +313,16 @@ fun PlayerScreen(
                         val isLeft = startPos.x < size.width / 2
                         var anyPointerConsumed = firstDown.isConsumed
 
+                        val longPressJob = scope.launch {
+                            delay(400L)
+                            if (!isDragging && !isMultiTouch && !isLongPressActive && !anyPointerConsumed) {
+                                isLongPressActive = true
+                                originalSpeed = playbackSpeed
+                                playerManager.setSpeed(2.0f)
+                                hudState = GestureHudState.SpeedBoost(2.0f)
+                            }
+                        }
+
                         var previousCentroid = Offset.Zero
                         var previousDistance = 0f
 
@@ -326,6 +336,7 @@ fun PlayerScreen(
 
                             if (activePointers.isEmpty()) {
                                 // All fingers lifted
+                                longPressJob.cancel()
                                 if (isLongPressActive) {
                                     isLongPressActive = false
                                     playerManager.setSpeed(originalSpeed)

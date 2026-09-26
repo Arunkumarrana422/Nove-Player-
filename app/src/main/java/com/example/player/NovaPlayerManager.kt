@@ -32,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -42,6 +43,15 @@ class NovaPlayerManager(private val context: Context) {
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+    init {
+        scope.launch {
+            try {
+                val settings = SettingsRepository(context).settingsFlow.first()
+                _aspectRatioMode.value = settings.defaultAspectRatio
+            } catch (_: Exception) {}
+        }
+    }
 
     private val trackSelector = DefaultTrackSelector(context)
     val exoPlayer: ExoPlayer by lazy {
@@ -385,10 +395,20 @@ class NovaPlayerManager(private val context: Context) {
         val currentIdx = modes.indexOf(_aspectRatioMode.value)
         val nextMode = modes[(currentIdx + 1) % modes.size]
         _aspectRatioMode.value = nextMode
+        scope.launch {
+            try {
+                SettingsRepository(context).setDefaultAspectRatio(nextMode)
+            } catch (_: Exception) {}
+        }
     }
 
     fun setAspectRatio(mode: AspectRatioMode) {
         _aspectRatioMode.value = mode
+        scope.launch {
+            try {
+                SettingsRepository(context).setDefaultAspectRatio(mode)
+            } catch (_: Exception) {}
+        }
     }
 
     fun nextVideo() {
