@@ -63,12 +63,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _selectedFolder = MutableStateFlow<VideoFolder?>(null)
-    val selectedFolder: StateFlow<VideoFolder?> = _selectedFolder.asStateFlow()
-
-    private val _selectedPlaylist = MutableStateFlow<Playlist?>(null)
-    val selectedPlaylist: StateFlow<Playlist?> = _selectedPlaylist.asStateFlow()
-
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
 
@@ -176,6 +170,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
+    )
+
+    private val _selectedFolderName = MutableStateFlow<String?>(null)
+    val selectedFolder: StateFlow<VideoFolder?> = combine(folders, _selectedFolderName) { fList, fName ->
+        if (fName == null) null else fList.find { it.name == fName }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
+    private val _selectedPlaylistId = MutableStateFlow<Long?>(null)
+    val selectedPlaylist: StateFlow<Playlist?> = combine(playlists, _selectedPlaylistId) { pList, pId ->
+        if (pId == null) null else pList.find { it.id == pId }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
     )
 
     val searchResults: StateFlow<List<Video>> = _searchQuery.flatMapLatest { query ->
@@ -299,11 +311,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun selectFolder(folder: VideoFolder?) {
-        _selectedFolder.value = folder
+        _selectedFolderName.value = folder?.name
     }
 
     fun selectPlaylist(playlist: Playlist?) {
-        _selectedPlaylist.value = playlist
+        _selectedPlaylistId.value = playlist?.id
     }
 
     fun createPlaylist(name: String, description: String = "") {
