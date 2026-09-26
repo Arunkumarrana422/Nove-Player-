@@ -26,6 +26,8 @@ import coil.compose.AsyncImage
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -405,71 +407,78 @@ fun AddSongsScreen(
             ) {
                 items(availableSongs, key = { it.id }) { song ->
                     val isSelected = selectedSongIds.contains(song.id)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) NovaPrimary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                            .clickable {
-                                selectedSongIds = if (isSelected) {
-                                    selectedSongIds - song.id
-                                } else {
-                                    selectedSongIds + song.id
-                                }
+                    Card(
+                        onClick = {
+                            selectedSongIds = if (isSelected) {
+                                selectedSongIds - song.id
+                            } else {
+                                selectedSongIds + song.id
                             }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) NovaPrimary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
+                        )
                     ) {
-                        Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = { checked ->
-                                selectedSongIds = if (checked) {
-                                    selectedSongIds + song.id
-                                } else {
-                                    selectedSongIds - song.id
-                                }
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        val albumArtUri = android.content.ContentUris.withAppendedId(
-                            android.net.Uri.parse("content://media/external/audio/albumart"),
-                            song.albumId
-                        )
-                        Box(
+                        Row(
                             modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Brush.linearGradient(listOf(Color(0xFF2A3347), Color(0xFF1E2433)))),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            AsyncImage(
-                                model = albumArtUri,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = { checked ->
+                                    selectedSongIds = if (checked) {
+                                        selectedSongIds + song.id
+                                    } else {
+                                        selectedSongIds - song.id
+                                    }
+                                }
                             )
-                            Icon(
-                                imageVector = Icons.Default.MusicNote,
-                                contentDescription = null,
-                                tint = Color.White.copy(alpha = 0.5f),
-                                modifier = Modifier.size(18.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            val albumArtUri = android.content.ContentUris.withAppendedId(
+                                android.net.Uri.parse("content://media/external/audio/albumart"),
+                                song.albumId
                             )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = song.title,
-                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                                maxLines = 1,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = song.artist,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Brush.linearGradient(listOf(Color(0xFF2A3347), Color(0xFF1E2433)))),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = albumArtUri,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.MusicNote,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = song.title,
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                    maxLines = 1,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = song.artist,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
                 }
@@ -566,53 +575,60 @@ fun AddVideosScreen(
             ) {
                 items(availableVideos, key = { it.id }) { video ->
                     val isSelected = selectedVideoIds.contains(video.id)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) NovaPrimary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                            .clickable {
-                                selectedVideoIds = if (isSelected) {
-                                    selectedVideoIds - video.id
-                                } else {
-                                    selectedVideoIds + video.id
-                                }
+                    Card(
+                        onClick = {
+                            selectedVideoIds = if (isSelected) {
+                                selectedVideoIds - video.id
+                            } else {
+                                selectedVideoIds + video.id
                             }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) NovaPrimary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
+                        )
                     ) {
-                        Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = { checked ->
-                                selectedVideoIds = if (checked) {
-                                    selectedVideoIds + video.id
-                                } else {
-                                    selectedVideoIds - video.id
-                                }
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        VideoThumbnailView(
-                            video = video,
+                        Row(
                             modifier = Modifier
-                                .size(64.dp, 40.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = video.title,
-                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                                maxLines = 1,
-                                color = MaterialTheme.colorScheme.onSurface
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = { checked ->
+                                    selectedVideoIds = if (checked) {
+                                        selectedVideoIds + video.id
+                                    } else {
+                                        selectedVideoIds - video.id
+                                    }
+                                }
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = video.folderName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1
+                            Spacer(modifier = Modifier.width(8.dp))
+                            VideoThumbnailView(
+                                video = video,
+                                modifier = Modifier
+                                    .size(64.dp, 40.dp)
+                                    .clip(RoundedCornerShape(6.dp))
                             )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = video.title,
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                    maxLines = 1,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = video.folderName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
                 }
