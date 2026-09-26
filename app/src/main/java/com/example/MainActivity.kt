@@ -473,8 +473,8 @@ fun NovaPlayerApp(
                             }
                         )
                     } else if (currentSongPlaying != null) {
-                        // iOS Style Music Player Widget when playing music
-                        IosMusicWidgetView(
+                        // Floating MiniAudioPlayer bar when playing music
+                        MiniAudioPlayerBar(
                             audioPlayerManager = viewModel.audioPlayerManager,
                             onExpand = {
                                 viewModel.audioPlayerManager.openFullPlayer()
