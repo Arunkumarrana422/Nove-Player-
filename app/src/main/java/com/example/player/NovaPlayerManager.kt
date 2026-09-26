@@ -5,6 +5,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
+import android.support.v4.media.MediaMetadataCompat
 import androidx.core.app.NotificationCompat
 import android.media.AudioManager
 import android.net.Uri
@@ -144,6 +147,15 @@ class NovaPlayerManager(private val context: Context) {
     private var progressJob: Job? = null
     private var sleepTimerJob: Job? = null
 
+    val mediaSession = MediaSessionCompat(context, "NovaVideoSession").apply {
+        isActive = true
+        setCallback(object : MediaSessionCompat.Callback() {
+            override fun onPlay() { play() }
+            override fun onPause() { pause() }
+            override fun onSeekTo(pos: Long) { seekTo(pos) }
+        })
+    }
+
     init {
         activeInstance = this
         val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -253,56 +265,20 @@ class NovaPlayerManager(private val context: Context) {
         val video = _currentVideo.value ?: return
         val isPlaying = _isPlaying.value
 
-        val intent = Intent(context, com.example.MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        val state = if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+        mediaSession.setPlaybackState(
+            PlaybackStateCompat.Builder()
+                .setState(state, _currentPositionMs.value, _playbackSpeed.value)
+                .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_SEEK_TO)
+                .build()
         )
-
-        val playPauseAction = if (isPlaying) {
-            NotificationCompat.Action(
-                android.R.drawable.ic_media_pause,
-                "Pause",
-                createVideoActionPendingIntent("VIDEO_PAUSE")
-            )
-        } else {
-            NotificationCompat.Action(
-                android.R.drawable.ic_media_play,
-                "Play",
-                createVideoActionPendingIntent("VIDEO_PLAY")
-            )
-        }
-
-        val stopAction = NotificationCompat.Action(
-            android.R.drawable.ic_menu_close_clear_cancel,
-            "Close",
-            createVideoActionPendingIntent("VIDEO_STOP")
+        mediaSession.setMetadata(
+            MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, video.title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, video.folderName)
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, video.durationMs)
+                .build()
         )
-
-        val notification = NotificationCompat.Builder(context, "media_playback_channel")
-            .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentTitle(video.title)
-            .setContentText(video.folderName)
-            .setContentIntent(pendingIntent)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOnlyAlertOnce(true)
-            .setOngoing(isAppInForeground)
-            .setStyle(
-                androidx.media.app.NotificationCompat.MediaStyle()
-                    .setShowActionsInCompactView(0, 1)
-            )
-            .addAction(playPauseAction)
-            .addAction(stopAction)
-            .setDeleteIntent(createVideoActionPendingIntent("VIDEO_DISMISS"))
-            .build()
-
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        try {
-            notificationManager.notify(1002, notification)
-        } catch (_: Exception) {}
     }
 
     private fun createVideoActionPendingIntent(action: String): PendingIntent {

@@ -1,6 +1,7 @@
 package com.example.player
 
 import android.app.Activity
+import android.content.ContentUris
 import android.content.Context
 import android.media.AudioManager
 import android.net.Uri
@@ -169,80 +170,33 @@ class AudioPlayerManager(private val context: Context) {
                 .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or PlaybackStateCompat.ACTION_SEEK_TO)
                 .build()
         )
-        mediaSession.setMetadata(
-            MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, song.title)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, song.artist)
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, song.album)
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, song.durationMs)
-                .build()
-        )
 
-        val intent = Intent(context, com.example.MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val playPauseAction = if (isPlaying) {
-            NotificationCompat.Action(
-                android.R.drawable.ic_media_pause,
-                "Pause",
-                createActionPendingIntent("ACTION_PAUSE")
-            )
-        } else {
-            NotificationCompat.Action(
-                android.R.drawable.ic_media_play,
-                "Play",
-                createActionPendingIntent("ACTION_PLAY")
-            )
+        val albumArtUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
+        val bitmap = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val source = android.graphics.ImageDecoder.createSource(context.contentResolver, albumArtUri)
+                android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                    decoder.isMutableRequired = true
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, albumArtUri)
+            }
+        } catch (_: Exception) {
+            null
         }
 
-        val prevAction = NotificationCompat.Action(
-            android.R.drawable.ic_media_previous,
-            "Previous",
-            createActionPendingIntent("ACTION_PREV")
-        )
+        val metadataBuilder = MediaMetadataCompat.Builder()
+            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, song.title)
+            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, song.artist)
+            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, song.album)
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, song.durationMs)
 
-        val nextAction = NotificationCompat.Action(
-            android.R.drawable.ic_media_next,
-            "Next",
-            createActionPendingIntent("ACTION_NEXT")
-        )
-
-        val stopAction = NotificationCompat.Action(
-            android.R.drawable.ic_menu_close_clear_cancel,
-            "Close",
-            createActionPendingIntent("ACTION_STOP")
-        )
-
-        val notification = NotificationCompat.Builder(context, "media_playback_channel")
-            .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentTitle(song.title)
-            .setContentText(song.artist)
-            .setContentIntent(pendingIntent)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOnlyAlertOnce(true)
-            .setOngoing(isAppInForeground)
-            .setStyle(
-                androidx.media.app.NotificationCompat.MediaStyle()
-                    .setMediaSession(mediaSession.sessionToken)
-                    .setShowActionsInCompactView(0, 1, 2)
-            )
-            .addAction(prevAction)
-            .addAction(playPauseAction)
-            .addAction(nextAction)
-            .addAction(stopAction)
-            .setDeleteIntent(createActionPendingIntent("ACTION_DISMISS"))
-            .build()
-
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        try {
-            notificationManager.notify(1001, notification)
-        } catch (_: Exception) {}
+        if (bitmap != null) {
+            metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
+            metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap)
+        }
+        mediaSession.setMetadata(metadataBuilder.build())
     }
 
     private fun createActionPendingIntent(action: String): PendingIntent {
