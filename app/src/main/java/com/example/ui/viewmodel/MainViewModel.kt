@@ -1,6 +1,7 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.content.IntentSender
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.repository.MusicRepository
@@ -36,6 +37,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val playerManager = NovaPlayerManager(application)
     val audioPlayerManager = AudioPlayerManager(application)
 
+    private val _deleteIntentSender = MutableStateFlow<android.content.IntentSender?>(null)
+    val deleteIntentSender: StateFlow<android.content.IntentSender?> = _deleteIntentSender.asStateFlow()
+
+    fun clearDeleteIntentSender() {
+        _deleteIntentSender.value = null
+    }
+
+    private val _toastMessage = MutableStateFlow<String?>(null)
+    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+
+    fun showToast(message: String) {
+        _toastMessage.value = message
+    }
+
+    fun clearToast() {
+        _toastMessage.value = null
+    }
     val userSettings: StateFlow<UserSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
@@ -222,7 +240,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteVideo(video: Video, deleteFromFileSystem: Boolean = false) {
         viewModelScope.launch {
-            repository.deleteVideo(video, deleteFromFileSystem)
+            repository.deleteVideo(video, deleteFromFileSystem) { sender ->
+                _deleteIntentSender.value = sender
+            }
         }
     }
 

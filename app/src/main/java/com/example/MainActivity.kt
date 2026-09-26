@@ -14,6 +14,7 @@ import android.util.Rational
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -47,7 +48,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
+import androidx.activity.result.IntentSenderRequest
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import com.example.ui.theme.NovaAccent
+import kotlinx.coroutines.delay
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -122,6 +139,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        viewModel.audioPlayerManager.isAppInForeground = true
+        viewModel.playerManager.isAppInForeground = true
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         try {
             notificationManager.cancel(1001)
@@ -162,6 +181,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        viewModel.audioPlayerManager.isAppInForeground = false
+        viewModel.playerManager.isAppInForeground = false
         val bgAudio = viewModel.userSettings.value.backgroundAudioEnabled
         if (bgAudio) {
             if (viewModel.audioPlayerManager.isPlaying.value) {
@@ -354,6 +375,27 @@ fun NovaPlayerApp(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    val deleteIntentSender by viewModel.deleteIntentSender.collectAsState()
+    val deleteLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.showToast("Video deleted from storage")
+            viewModel.scanLibrary()
+        }
+        viewModel.clearDeleteIntentSender()
+    }
+
+    LaunchedEffect(deleteIntentSender) {
+        deleteIntentSender?.let { sender ->
+            try {
+                deleteLauncher.launch(IntentSenderRequest.Builder(sender).build())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     val sharedPrefs = remember { context.getSharedPreferences("nova_prefs", Context.MODE_PRIVATE) }
     val onboardingDone = remember { sharedPrefs.getBoolean("onboarding_completed", false) || userSettings.onboardingCompleted }
     val startDestination = if (onboardingDone) Screen.MainTabs.route else Screen.Onboarding.route
@@ -375,7 +417,7 @@ fun NovaPlayerApp(
             (context as? Activity)?.finish()
         } else {
             lastBackPressTime = currentTime
-            Toast.makeText(context, "Press back again to exit", Toast.LENGTH_SHORT).show()
+            viewModel.showToast("Press back again to exit")
         }
     }
 
@@ -636,7 +678,7 @@ fun NovaPlayerApp(
                         onAddToPlaylist = { song ->
                             if (audioPlaylists.isNotEmpty()) {
                                 viewModel.addSongToAudioPlaylist(audioPlaylists.first().id, song)
-                                Toast.makeText(context, "Added to playlist", Toast.LENGTH_SHORT).show()
+                                viewModel.showToast("Added to playlist")
                             } else {
                                 viewModel.createAudioPlaylist("My Music Playlist")
                             }
@@ -780,11 +822,9 @@ fun NovaPlayerApp(
             onConfirm = { deleteFromFileSystem ->
                 viewModel.deleteVideo(video, deleteFromFileSystem)
                 videoToDelete = null
-                Toast.makeText(
-                    context,
-                    if (deleteFromFileSystem) "Video permanently deleted from storage" else "Video removed from library",
-                    Toast.LENGTH_SHORT
-                ).show()
+                viewModel.showToast(
+                    if (deleteFromFileSystem) "Video permanently deleted from storage" else "Video removed from library"
+                )
             }
         )
     }
@@ -801,5 +841,42 @@ fun NovaPlayerApp(
             audioPlayerManager = viewModel.audioPlayerManager,
             onDismiss = { viewModel.audioPlayerManager.closeFullPlayer() }
         )
+    }
+
+    // Animated Pill Toast Overlay across the entire app
+    val toastMsg by viewModel.toastMessage.collectAsState()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = if (showBottomBar && currentVideoPlaying != null) 140.dp else 80.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        AnimatedVisibility(
+            visible = toastMsg != null,
+            enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn() + scaleIn(initialScale = 0.9f),
+            exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut() + scaleOut(targetScale = 0.9f)
+        ) {
+            if (toastMsg != null) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xEE0B1020))
+                        .border(1.dp, NovaAccent.copy(alpha = 0.6f), RoundedCornerShape(50))
+                        .padding(horizontal = 24.dp, vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = toastMsg ?: "",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                LaunchedEffect(toastMsg) {
+                    delay(2000L)
+                    viewModel.clearToast()
+                }
+            }
+        }
     }
 }

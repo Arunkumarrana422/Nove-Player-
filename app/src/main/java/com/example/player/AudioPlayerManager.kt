@@ -30,6 +30,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class AudioPlayerManager(private val context: Context) {
+    var isAppInForeground = true
     companion object {
         var activeInstance: AudioPlayerManager? = null
     }
@@ -195,6 +196,7 @@ class AudioPlayerManager(private val context: Context) {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOnlyAlertOnce(true)
+            .setOngoing(isAppInForeground)
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setShowActionsInCompactView(0, 1, 2)

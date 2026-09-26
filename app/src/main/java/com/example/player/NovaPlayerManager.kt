@@ -37,6 +37,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class NovaPlayerManager(private val context: Context) {
+    var isAppInForeground = true
     companion object {
         var activeInstance: NovaPlayerManager? = null
     }
@@ -288,6 +289,7 @@ class NovaPlayerManager(private val context: Context) {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOnlyAlertOnce(true)
+            .setOngoing(isAppInForeground)
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setShowActionsInCompactView(0, 1)

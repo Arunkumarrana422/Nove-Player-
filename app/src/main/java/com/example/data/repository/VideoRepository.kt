@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import android.content.ContentUris
 import android.content.Context
+import android.content.IntentSender
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
@@ -191,7 +192,7 @@ class VideoRepository(private val context: Context) {
         videoDao.setFavorite(video.id, newFav)
     }
 
-    suspend fun deleteVideo(video: Video, deleteFromFileSystem: Boolean = false) = withContext(Dispatchers.IO) {
+    suspend fun deleteVideo(video: Video, deleteFromFileSystem: Boolean = false, onDeleteIntentSender: (IntentSender) -> Unit = {}) = withContext(Dispatchers.IO) {
         if (deleteFromFileSystem && !video.isOnline) {
             try {
                 if (video.path.isNotBlank()) {
@@ -202,9 +203,22 @@ class VideoRepository(private val context: Context) {
                 }
                 if (video.uri.isNotBlank()) {
                     val uri = Uri.parse(video.uri)
-                    context.contentResolver.delete(uri, null, null)
+                    try {
+                        context.contentResolver.delete(uri, null, null)
+                    } catch (e: android.app.RecoverableSecurityException) {
+                        onDeleteIntentSender(e.userAction.actionIntent.intentSender)
+                    } catch (e: Exception) {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                            try {
+                                val request = android.provider.MediaStore.createDeleteRequest(context.contentResolver, listOf(uri))
+                                onDeleteIntentSender(request.intentSender)
+                            } catch (_: Exception) {}
+                        }
+                    }
                 }
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
         videoDao.deleteVideo(video.id)
     }
