@@ -62,7 +62,7 @@ fun GestureOverlayIndicator(
     hudState: GestureHudState,
     modifier: Modifier = Modifier
 ) {
-    val isPillHud = hudState is GestureHudState.SpeedBoost || hudState is GestureHudState.Zoom
+    val isPillHud = hudState is GestureHudState.SpeedBoost || hudState is GestureHudState.Zoom || hudState is GestureHudState.DoubleTapSeek
 
     AnimatedVisibility(
         visible = hudState !is GestureHudState.None,
@@ -175,14 +175,14 @@ fun GestureOverlayIndicator(
                             imageVector = if (hudState.isForward) Icons.Default.FastForward else Icons.Default.FastRewind,
                             contentDescription = null,
                             tint = NovaAccent,
-                            modifier = Modifier.size(30.dp)
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "${if (hudState.isForward) "+" else "-"}${hudState.deltaSeconds} seconds",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
+                            fontSize = 13.sp
                         )
                     }
                 }
